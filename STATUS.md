@@ -16,4 +16,13 @@ Updated after each work item completes.
 | WI-10 | Background worker                  | Done         |
 | WI-11 | Popup UI                           | Done         |
 | WI-12 | Content script                     | Done         |
-| WI-13 | Manual test pass & docs            | Pending      |
+| WI-13 | Manual test pass & docs            | Done         |
+
+## Verification
+
+- `npm run verify`: 40/40 unit tests pass (storage, adapters, registry, matcher, messaging).
+- `node scripts/e2e-check.js`: parse → build → parse round-trip passes for all four sites.
+- Automated load-unpacked smoke test is not possible on this Chrome build (the
+  `--load-extension` command-line switch is disabled); use manual **Load unpacked** per README.
+
+All 13 work items complete.
