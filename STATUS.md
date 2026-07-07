@@ -1,0 +1,19 @@
+# FilterCart — Status
+
+Updated after each work item completes.
+
+| ID    | Work Item                          | Status       |
+| ----- | ---------------------------------- | ------------ |
+| WI-01 | Repo & tracking setup              | Done         |
+| WI-02 | Manifest & skeleton                | Pending      |
+| WI-03 | Storage layer                      | Pending      |
+| WI-04 | Adapter contract + registry        | Pending      |
+| WI-05 | Flipkart adapter                   | Pending      |
+| WI-06 | Amazon adapter                     | Pending      |
+| WI-07 | Myntra adapter                     | Pending      |
+| WI-08 | Ajio adapter                       | Pending      |
+| WI-09 | Matcher                            | Pending      |
+| WI-10 | Background worker                  | Pending      |
+| WI-11 | Popup UI                           | Pending      |
+| WI-12 | Content script                     | Pending      |
+| WI-13 | Manual test pass & docs            | Pending      |
