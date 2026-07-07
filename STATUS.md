@@ -12,7 +12,7 @@ Updated after each work item completes.
 | WI-06 | Amazon adapter                     | Done         |
 | WI-07 | Myntra adapter                     | Done         |
 | WI-08 | Ajio adapter                       | Done         |
-| WI-09 | Matcher                            | Pending      |
+| WI-09 | Matcher                            | Done         |
 | WI-10 | Background worker                  | Pending      |
 | WI-11 | Popup UI                           | Pending      |
 | WI-12 | Content script                     | Pending      |

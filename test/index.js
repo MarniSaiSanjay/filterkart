@@ -6,6 +6,6 @@ import { run } from "./harness.js";
 import "./storage.test.js";
 import "./registry.test.js";
 import "./adapters.test.js";
-// import "./matcher.test.js";
+import "./matcher.test.js";
 
 await run();
