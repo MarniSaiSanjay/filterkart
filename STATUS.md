@@ -6,7 +6,7 @@ Updated after each work item completes.
 | ----- | ---------------------------------- | ------------ |
 | WI-01 | Repo & tracking setup              | Done         |
 | WI-02 | Manifest & skeleton                | Done         |
-| WI-03 | Storage layer                      | Pending      |
+| WI-03 | Storage layer                      | Done         |
 | WI-04 | Adapter contract + registry        | Pending      |
 | WI-05 | Flipkart adapter                   | Pending      |
 | WI-06 | Amazon adapter                     | Pending      |
