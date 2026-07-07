@@ -13,7 +13,7 @@ Updated after each work item completes.
 | WI-07 | Myntra adapter                     | Done         |
 | WI-08 | Ajio adapter                       | Done         |
 | WI-09 | Matcher                            | Done         |
-| WI-10 | Background worker                  | Pending      |
+| WI-10 | Background worker                  | Done         |
 | WI-11 | Popup UI                           | Pending      |
 | WI-12 | Content script                     | Pending      |
 | WI-13 | Manual test pass & docs            | Pending      |

@@ -7,5 +7,6 @@ import "./storage.test.js";
 import "./registry.test.js";
 import "./adapters.test.js";
 import "./matcher.test.js";
+import "./messaging.test.js";
 
 await run();
