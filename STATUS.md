@@ -15,5 +15,5 @@ Updated after each work item completes.
 | WI-09 | Matcher                            | Done         |
 | WI-10 | Background worker                  | Done         |
 | WI-11 | Popup UI                           | Done         |
-| WI-12 | Content script                     | Pending      |
+| WI-12 | Content script                     | Done         |
 | WI-13 | Manual test pass & docs            | Pending      |
