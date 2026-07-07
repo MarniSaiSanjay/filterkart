@@ -2,6 +2,7 @@ import { setFile, test, assertEqual } from "./harness.js";
 import flipkart from "../src/adapters/flipkart.js";
 import amazon from "../src/adapters/amazon.js";
 import myntra from "../src/adapters/myntra.js";
+import ajio from "../src/adapters/ajio.js";
 
 setFile("adapters");
 
@@ -106,5 +107,33 @@ test("myntra.build routes Price to rf and round-trips", () => {
   assertEqual(built.includes("rf="), true);
   const { search, filters: out } = myntra.parse(new URL(built));
   assertEqual(search, "running-shoes");
+  assertEqual(out, filters);
+});
+
+// ---- Ajio (WI-08) ----
+// Real URL verified live: accumulating :genderfilter pairs in query=.
+test("ajio.parse reads text + query key/value pairs (skips sort token)", () => {
+  const url =
+    "https://www.ajio.com/search/?query=" +
+    encodeURIComponent(":relevance:genderfilter:Women:genderfilter:Men") +
+    "&text=" +
+    encodeURIComponent("running shoes");
+  const { search, filters } = ajio.parse(new URL(url));
+  assertEqual(search, "running shoes");
+  assertEqual(filters, [
+    { facet: "genderfilter", value: "Women" },
+    { facet: "genderfilter", value: "Men" },
+  ]);
+});
+
+test("ajio.build emits :relevance prefix and round-trips", () => {
+  const filters = [
+    { facet: "brand", value: "Nike" },
+    { facet: "genderfilter", value: "Men" },
+  ];
+  const built = ajio.build(new URL("https://www.ajio.com/search/"), "shoes", filters);
+  assertEqual(built.includes("relevance"), true);
+  const { search, filters: out } = ajio.parse(new URL(built));
+  assertEqual(search, "shoes");
   assertEqual(out, filters);
 });
