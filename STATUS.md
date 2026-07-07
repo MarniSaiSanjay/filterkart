@@ -8,7 +8,7 @@ Updated after each work item completes.
 | WI-02 | Manifest & skeleton                | Done         |
 | WI-03 | Storage layer                      | Done         |
 | WI-04 | Adapter contract + registry        | Done         |
-| WI-05 | Flipkart adapter                   | Pending      |
+| WI-05 | Flipkart adapter                   | Done         |
 | WI-06 | Amazon adapter                     | Pending      |
 | WI-07 | Myntra adapter                     | Pending      |
 | WI-08 | Ajio adapter                       | Pending      |

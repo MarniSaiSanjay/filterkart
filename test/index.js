@@ -5,7 +5,7 @@ import { run } from "./harness.js";
 // Test suites (uncomment/add as modules are implemented):
 import "./storage.test.js";
 import "./registry.test.js";
-// import "./adapters.test.js";
+import "./adapters.test.js";
 // import "./matcher.test.js";
 
 await run();

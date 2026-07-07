@@ -1,18 +1,52 @@
-// Flipkart adapter. Filter encoding completed in WI-05.
-// Filters live in repeated p[]=facets.<facet>[]=<value> params; search term is q=.
-import { dedupeFilters } from "./base.js";
+// Flipkart adapter.
+// Filters are repeated `p[]` params, each value shaped `facets.<facet>[]=<value>`.
+// In a live URL the inner `[]` and `=` are percent-encoded, so after
+// URLSearchParams decoding a value looks like: facets.brand%5B%5D=Lenovo
+// Search term is the `q=` param.
+import { dedupeFilters, toURL } from "./base.js";
+
+const INNER = /^facets\.(.+?)(?:%5B%5D|\[\])=(.*)$/i;
+
+function parseInner(raw) {
+  const m = INNER.exec(raw);
+  if (!m) return null;
+  let value = m[2];
+  try {
+    value = decodeURIComponent(value.replace(/\+/g, " "));
+  } catch {
+    // leave value as-is if it isn't valid percent-encoding
+  }
+  return { facet: m[1], value };
+}
 
 export default {
   id: "flipkart",
   label: "Flipkart",
+
   matches(url) {
     return /(^|\.)flipkart\.com$/.test(url.hostname) && url.pathname.startsWith("/search");
   },
-  parse(_url) {
-    return { search: "", filters: [] };
+
+  parse(url) {
+    const u = toURL(url);
+    const search = u.searchParams.get("q") || "";
+    const filters = [];
+    for (const raw of u.searchParams.getAll("p[]")) {
+      const f = parseInner(raw);
+      if (f) filters.push(f);
+    }
+    return { search, filters: dedupeFilters(filters) };
   },
-  build(baseUrl, _search, filters) {
-    dedupeFilters(filters);
-    return baseUrl.toString();
+
+  build(baseUrl, search, filters) {
+    const u = toURL(baseUrl);
+    u.pathname = "/search";
+    const params = new URLSearchParams();
+    if (search) params.set("q", search);
+    for (const f of dedupeFilters(filters)) {
+      params.append("p[]", `facets.${f.facet}%5B%5D=${encodeURIComponent(f.value)}`);
+    }
+    u.search = params.toString();
+    return u.toString();
   },
 };
