@@ -19,4 +19,72 @@ header {
 }
 h1 { font-size: 15px; margin: 0; color: var(--accent); }
 main { padding: 12px 14px; }
-.muted { color: var(--muted); font-size: 13px; }
+.muted { color: var(--muted); font-size: 13px; line-height: 1.4; }
+.error { color: #b91c1c; font-size: 13px; }
+
+.context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.badge {
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: capitalize;
+}
+.search { font-size: 13px; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.save { margin-bottom: 12px; }
+.save-row { display: flex; gap: 6px; }
+.name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.name-input:focus { outline: none; border-color: var(--accent); }
+
+.section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 12px 0 6px;
+}
+
+.preset-list { list-style: none; margin: 0; padding: 0; }
+.preset {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.preset-info { min-width: 0; }
+.preset-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preset-meta { font-size: 11px; color: var(--muted); }
+.row-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+.btn {
+  font-size: 12px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--fg);
+  cursor: pointer;
+}
+.btn:hover { background: #f3f4f6; }
+.btn:disabled { opacity: 0.6; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #1c5fd0; }
+.btn.icon { padding: 5px 8px; }
+.btn.danger:hover { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
