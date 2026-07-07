@@ -5,7 +5,7 @@ Updated after each work item completes.
 | ID    | Work Item                          | Status       |
 | ----- | ---------------------------------- | ------------ |
 | WI-01 | Repo & tracking setup              | Done         |
-| WI-02 | Manifest & skeleton                | Pending      |
+| WI-02 | Manifest & skeleton                | Done         |
 | WI-03 | Storage layer                      | Pending      |
 | WI-04 | Adapter contract + registry        | Pending      |
 | WI-05 | Flipkart adapter                   | Pending      |
