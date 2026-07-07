@@ -1,6 +1,7 @@
 import { setFile, test, assertEqual } from "./harness.js";
 import flipkart from "../src/adapters/flipkart.js";
 import amazon from "../src/adapters/amazon.js";
+import myntra from "../src/adapters/myntra.js";
 
 setFile("adapters");
 
@@ -64,4 +65,46 @@ test("amazon.build groups values per facet and round-trips", () => {
     { facet: "p_123", value: "391242" },
     { facet: "p_36", value: "2850000-6100000" },
   ]);
+});
+
+// ---- Myntra (WI-07) ----
+// Real URL verified live: Brand:Nike,Puma,ADIDAS on /sports-shoes.
+test("myntra.parse reads category from path and brands from f", () => {
+  const url = "https://www.myntra.com/sports-shoes?f=Brand:Nike,Puma,ADIDAS";
+  const { search, filters } = myntra.parse(new URL(url));
+  assertEqual(search, "sports-shoes");
+  assertEqual(filters, [
+    { facet: "Brand", value: "Nike" },
+    { facet: "Brand", value: "Puma" },
+    { facet: "Brand", value: "ADIDAS" },
+  ]);
+});
+
+test("myntra.parse handles f (::) and rf (Price) together", () => {
+  const url =
+    "https://www.myntra.com/fwdgenzcollection?f=" +
+    encodeURIComponent("Categories:Dresses::Gender:men women,women") +
+    "&rf=" +
+    encodeURIComponent("Price:0.0_600.0_0.0 TO 600.0");
+  const { search, filters } = myntra.parse(new URL(url));
+  assertEqual(search, "fwdgenzcollection");
+  assertEqual(filters, [
+    { facet: "Categories", value: "Dresses" },
+    { facet: "Gender", value: "men women" },
+    { facet: "Gender", value: "women" },
+    { facet: "Price", value: "0.0_600.0_0.0 TO 600.0" },
+  ]);
+});
+
+test("myntra.build routes Price to rf and round-trips", () => {
+  const filters = [
+    { facet: "Brand", value: "Nike" },
+    { facet: "Brand", value: "Puma" },
+    { facet: "Price", value: "0.0_600.0_0.0 TO 600.0" },
+  ];
+  const built = myntra.build(new URL("https://www.myntra.com/old"), "running-shoes", filters);
+  assertEqual(built.includes("rf="), true);
+  const { search, filters: out } = myntra.parse(new URL(built));
+  assertEqual(search, "running-shoes");
+  assertEqual(out, filters);
 });
