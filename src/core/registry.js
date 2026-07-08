@@ -7,8 +7,9 @@ import myntra from "../adapters/myntra.js";
 import ajio from "../adapters/ajio.js";
 import nykaa from "../adapters/nykaa.js";
 import meesho from "../adapters/meesho.js";
+import croma from "../adapters/croma.js";
 
-export const ADAPTERS = [flipkart, amazon, myntra, ajio, nykaa, meesho].map(validateAdapter);
+export const ADAPTERS = [flipkart, amazon, myntra, ajio, nykaa, meesho, croma].map(validateAdapter);
 
 // Return the first adapter whose matches() accepts the URL, or null.
 export function resolveAdapter(url) {

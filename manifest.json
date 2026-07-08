@@ -10,7 +10,8 @@
     "*://*.myntra.com/*",
     "*://*.ajio.com/*",
     "*://*.nykaa.com/*",
-    "*://*.meesho.com/*"
+    "*://*.meesho.com/*",
+    "*://*.croma.com/*"
   ],
   "background": {
     "service_worker": "src/background.js",
@@ -42,7 +43,8 @@
         "*://*.myntra.com/*",
         "*://*.ajio.com/*",
         "*://*.nykaa.com/*",
-        "*://*.meesho.com/*"
+        "*://*.meesho.com/*",
+        "*://*.croma.com/*"
       ],
       "js": ["src/content/content.js"],
       "run_at": "document_idle"

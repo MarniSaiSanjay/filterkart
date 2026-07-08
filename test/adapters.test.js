@@ -5,6 +5,7 @@ import myntra from "../src/adapters/myntra.js";
 import ajio from "../src/adapters/ajio.js";
 import nykaa from "../src/adapters/nykaa.js";
 import meesho from "../src/adapters/meesho.js";
+import croma from "../src/adapters/croma.js";
 
 setFile("adapters");
 
@@ -229,4 +230,61 @@ test("meesho.build re-emits triples with per-facet indices and round-trips", () 
   const { search, filters: out } = meesho.parse(new URL(built));
   assertEqual(search, "kurti");
   assertEqual(out, filters);
+});
+
+// ---- Croma ----
+// Real URLs captured live (user-provided): colon-delimited `q` chain
+// term:sort:facet:value:... ; search at /searchB (+ text=), category at /c/<id>.
+test("croma.parse reads the term + facet chain from a real search URL", () => {
+  const url =
+    "https://www.croma.com/searchB?q=" +
+    encodeURIComponent(
+      "mobile:relevance:lower_categories:95:price_group:National_50,001 - 60,000:SG-M&TProcessorDetails-ProcessorBrand:Google"
+    ) +
+    "&text=mobile";
+  const { search, filters, meta } = croma.parse(new URL(url));
+  assertEqual(search, "mobile");
+  assertEqual(meta, undefined);
+  assertEqual(filters, [
+    { facet: "lower_categories", value: "95" },
+    { facet: "price_group", value: "National_50,001 - 60,000" },
+    { facet: "SG-M&TProcessorDetails-ProcessorBrand", value: "Google" },
+  ]);
+});
+
+test("croma.matches accepts /search and /c/ category pages only", () => {
+  assertEqual(croma.matches(new URL("https://www.croma.com/searchB?q=mobile%3Arelevance")), true);
+  assertEqual(croma.matches(new URL("https://www.croma.com/campaign/x/c/7070?q=%3Arelevance")), true);
+  assertEqual(croma.matches(new URL("https://www.croma.com/")), false);
+});
+
+test("croma.build round-trips a search preset through parse", () => {
+  const filters = [
+    { facet: "price_group", value: "National_50,001 - 60,000" },
+    { facet: "SG-M&TProcessorDetails-ProcessorBrand", value: "Google" },
+  ];
+  const built = croma.build(new URL("https://www.croma.com/searchB"), "mobile", filters);
+  assertEqual(built.includes("text=mobile"), true);
+  const { search, filters: out, meta } = croma.parse(new URL(built));
+  assertEqual(search, "mobile");
+  assertEqual(meta, undefined);
+  assertEqual(out, filters);
+});
+
+test("croma.parse reads category path (meta) and round-trips via build", () => {
+  const url =
+    "https://www.croma.com/campaign/top-selling-croma-refrigerators/c/7070?q=" +
+    encodeURIComponent(":relevance:delivery_mode:Home Delivery:SG-RefrigeratorCategory-IdealFamilySize:Family of 3");
+  const { search, filters, meta } = croma.parse(new URL(url));
+  assertEqual(meta, { path: "/campaign/top-selling-croma-refrigerators/c/7070" });
+  assertEqual(search, "top selling croma refrigerators");
+  assertEqual(filters, [
+    { facet: "delivery_mode", value: "Home Delivery" },
+    { facet: "SG-RefrigeratorCategory-IdealFamilySize", value: "Family of 3" },
+  ]);
+  const built = croma.build(new URL("https://www.croma.com/searchB"), search, filters, meta);
+  assertEqual(built.includes("/c/7070"), true);
+  const out = croma.parse(new URL(built));
+  assertEqual(out.meta, meta);
+  assertEqual(out.filters, filters);
 });
