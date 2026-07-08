@@ -75,10 +75,6 @@
   fab.appendChild(toggle);
   root.appendChild(fab);
 
-  function esc(s) {
-    return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  }
-
   async function refresh() {
     panel.textContent = "";
     const heading = document.createElement("p");

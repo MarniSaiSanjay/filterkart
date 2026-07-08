@@ -3,7 +3,7 @@
   "name": "FilterCart",
   "version": "0.1.0",
   "description": "Save and reapply shopping-site filter presets with one click.",
-  "permissions": ["storage", "tabs", "activeTab", "scripting"],
+  "permissions": ["storage", "tabs"],
   "host_permissions": [
     "*://*.flipkart.com/*",
     "*://*.amazon.in/*",

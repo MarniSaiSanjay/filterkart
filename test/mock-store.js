@@ -17,8 +17,5 @@ export function mockStore(initial = {}) {
       data = { ...data, ...obj };
       cb();
     },
-    _dump() {
-      return data;
-    },
   };
 }

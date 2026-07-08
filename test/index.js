@@ -2,7 +2,7 @@
 // Add new suites here as work items land.
 import { run } from "./harness.js";
 
-// Test suites (uncomment/add as modules are implemented):
+// Test suites — add new suites here as work items land.
 import "./storage.test.js";
 import "./registry.test.js";
 import "./adapters.test.js";

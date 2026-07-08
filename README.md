@@ -73,7 +73,8 @@ test/*                 zero-dependency test harness + suites
 
 > Note: automated "load unpacked" testing via Chrome command-line flags is not possible on
 > recent Chrome stable builds (the `--load-extension` switch is disabled). Use the manual
-> **Load unpacked** steps above to try it in a browser.
+> **Load unpacked** steps above to try it in a browser. See [TESTING.md](TESTING.md) for a
+> step-by-step manual test checklist.
 
 ## Scope
 

@@ -172,7 +172,7 @@ URL/param-based approach works universally. Only the encoding differs per site:
 | Flipkart | `q=`               | repeated `p[]=facets.<facet>[]=<value>` params             |
 | Amazon   | `k=`               | single `rh=` param; facets comma-joined, values pipe-joined |
 | Myntra   | path (e.g. `/sports-shoes`) | `f=<Facet>:<v1>,<v2>::<Facet2>:…` + `rf=Price:…`    |
-| Ajio     | `text=`            | `query=:relevance:<key>:<value>:<key>:<value>…`            |
+| Ajio     | `text=` **or** `/s/rd-<term>-<ids>` path slug | `query=:relevance:<key>:<value>:<key>:<value>…`            |
 
 Adapter takeaway: each adapter just needs to (a) recognise the site's result URL and (b) know
 how to read/merge its filter param(s). No DOM automation required for any of these.
@@ -267,6 +267,13 @@ https://www.ajio.com/search/?query=:relevance:genderfilter:Women:genderfilter:Me
 
 **Verification:** clicking facets appended pairs to `query=`; a second selection produced
 `:relevance:genderfilter:Women:genderfilter:Men`, confirming accumulation. ✅
+
+**Update — live re-check (2026-07-08):** Ajio now **redirects** `/search/?text=<term>` to
+`/s/rd-<term>-<ids>?query=:relevance:<facets>` (e.g. `/s/rd-shoes-5488-78681`). The search
+term moved into the **path slug** and there is no `text=` param on the results page. The
+`query=` facet encoding is unchanged. The adapter was updated to (a) match the `/s/` path and
+(b) read the search term from the slug. Apply still uses `/search/?text=&query=` — verified live
+that Ajio preserves the facets through the redirect. ✅
 
 ## Croma / Reliance Digital — not yet inspected
 

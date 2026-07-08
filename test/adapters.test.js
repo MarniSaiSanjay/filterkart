@@ -137,3 +137,20 @@ test("ajio.build emits :relevance prefix and round-trips", () => {
   assertEqual(search, "shoes");
   assertEqual(out, filters);
 });
+
+// Live drift (2026): /search/?text= redirects to /s/rd-<term>-<ids>?query=...
+// The search term moves into the path slug and there is no text= param.
+test("ajio.matches accepts the /s/ results path", () => {
+  assertEqual(ajio.matches(new URL("https://www.ajio.com/s/rd-shoes-5488-78681?query=:relevance")), true);
+  assertEqual(ajio.matches(new URL("https://www.ajio.com/search/?text=shoes")), true);
+});
+
+test("ajio.parse extracts the search term from the /s/rd- path slug", () => {
+  const url =
+    "https://www.ajio.com/s/rd-running-shoes-5488-78681?query=" +
+    encodeURIComponent(":relevance:genderfilter:Men") +
+    "&classifier=intent";
+  const { search, filters } = ajio.parse(new URL(url));
+  assertEqual(search, "running shoes");
+  assertEqual(filters, [{ facet: "genderfilter", value: "Men" }]);
+});
