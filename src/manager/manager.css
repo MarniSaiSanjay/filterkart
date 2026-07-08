@@ -27,15 +27,24 @@ body {
 }
 .side-brand { display: flex; align-items: center; gap: 12px; padding: 2px 6px 4px; }
 .logo-tile {
-  width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0; overflow: hidden;
-  background: #fff; box-shadow: 0 6px 16px rgba(53, 56, 230, 0.22); display: flex;
+  width: 52px; height: 52px; flex-shrink: 0; display: flex;
 }
-.logo-tile .logo { width: 100%; height: 100%; display: block; padding: 2px; box-sizing: border-box; }
+.logo-tile .logo { width: 100%; height: 100%; display: block; box-sizing: border-box; }
 .side-title h1 { font-family: var(--display); font-size: 19px; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
 .side-title p { font-size: 11px; color: var(--muted); margin: 2px 0 0; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
 
-.side-nav { display: flex; flex-direction: column; gap: 3px; }
-.nav-item {
+/* --- Sidebar footer ------------------------------------------------------ */
+.side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px 8px 2px; border-top: 1px solid var(--glass-brd); }
+.foot-meta { display: flex; align-items: center; gap: 8px; }
+.foot-badge {
+  font-family: var(--display); font-size: 11px; font-weight: 800; letter-spacing: 0.02em;
+  padding: 2px 8px; border-radius: 999px; color: var(--ink);
+  background: rgba(255, 255, 255, 0.55); border: 1px solid var(--glass-brd);
+}
+.foot-sites { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.foot-copy { font-size: 10.5px; color: var(--muted); margin: 0; line-height: 1.4; }
+
+.side-nav { display: flex; flex-direction: column; gap: 3px; }.nav-item {
   display: flex; align-items: center; gap: 11px; border: none; background: transparent; cursor: pointer;
   padding: 9px 11px; border-radius: 13px; text-align: left;
   font-family: var(--display); font-size: 14px; font-weight: 700; color: var(--ink);

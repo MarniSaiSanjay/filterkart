@@ -83,7 +83,13 @@ function navItem(site) {
 function renderNav() {
   nav.textContent = "";
   nav.appendChild(navItem({ id: "all", label: "All presets" }));
-  for (const site of state.sites) nav.appendChild(navItem(site));
+  // Order sites by how many presets they hold (most-used first) so the sites a
+  // user actively saves to stay near the top; ties fall back to label order.
+  const ordered = [...state.sites].sort((a, b) => {
+    const diff = countFor(b.id) - countFor(a.id);
+    return diff !== 0 ? diff : labelFor(a.id).localeCompare(labelFor(b.id));
+  });
+  for (const site of ordered) nav.appendChild(navItem(site));
 }
 
 // --- preset cards ----------------------------------------------------------
@@ -335,3 +341,6 @@ async function load() {
 }
 
 load();
+
+const yearEl = document.getElementById("foot-year");
+if (yearEl) yearEl.textContent = String(new Date().getFullYear());
