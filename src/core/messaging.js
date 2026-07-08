@@ -14,6 +14,7 @@ export const SITE_ROOTS = {
   amazon: "https://www.amazon.in/s",
   myntra: "https://www.myntra.com/",
   ajio: "https://www.ajio.com/search/",
+  nykaa: "https://www.nykaa.com/search/result/",
 };
 
 async function getContext(deps) {
@@ -54,7 +55,7 @@ async function save(deps, msg) {
   if (!tab || !tab.url) throw new Error("no active tab");
   const adapter = deps.resolveAdapter(tab.url);
   if (!adapter) throw new Error("this site is not supported");
-  const { search, filters } = adapter.parse(new URL(tab.url));
+  const { search, filters, meta } = adapter.parse(new URL(tab.url));
   if (!filters.length) throw new Error("no filters selected on this page");
   const preset = await deps.createPreset({
     name: msg.name || search || adapter.label,
@@ -62,6 +63,7 @@ async function save(deps, msg) {
     canonicalCategory: deps.normalize(search),
     search,
     filters,
+    meta,
   });
   return { preset };
 }
@@ -86,7 +88,7 @@ async function apply(deps, msg) {
     if (cur.search) search = cur.search;
   }
 
-  const url = adapter.build(base, search, preset.filters);
+  const url = adapter.build(base, search, preset.filters, preset.meta);
   if (tab && tab.id != null) await deps.navigateTab(tab.id, url);
   return { url };
 }
@@ -100,7 +102,7 @@ async function buildUrl(deps, msg) {
   if (!adapter) throw new Error("no adapter for " + preset.siteId);
   const root = SITE_ROOTS[preset.siteId];
   if (!root) throw new Error("no root url for " + preset.siteId);
-  const url = adapter.build(new URL(root), preset.search, preset.filters);
+  const url = adapter.build(new URL(root), preset.search, preset.filters, preset.meta);
   return { url };
 }
 

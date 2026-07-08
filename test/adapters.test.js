@@ -3,6 +3,7 @@ import flipkart from "../src/adapters/flipkart.js";
 import amazon from "../src/adapters/amazon.js";
 import myntra from "../src/adapters/myntra.js";
 import ajio from "../src/adapters/ajio.js";
+import nykaa from "../src/adapters/nykaa.js";
 
 setFile("adapters");
 
@@ -153,4 +154,40 @@ test("ajio.parse extracts the search term from the /s/rd- path slug", () => {
   const { search, filters } = ajio.parse(new URL(url));
   assertEqual(search, "running shoes");
   assertEqual(filters, [{ facet: "genderfilter", value: "Men" }]);
+});
+
+// ---- Nykaa ----
+// Real URL captured live: search redirects to a category page (/makeup/lips/c/15)
+// and filters are <facet>_filter params with comma-separated values.
+test("nykaa.parse reads category path (meta) and comma-split _filter params", () => {
+  const url =
+    "https://www.nykaa.com/makeup/lips/c/15?page_no=1&sort=popularity&brand_filter=27256,8861&price_range_filter=500-999";
+  const { search, filters, meta } = nykaa.parse(new URL(url));
+  assertEqual(search, "makeup lips");
+  assertEqual(meta, { path: "/makeup/lips/c/15" });
+  assertEqual(filters, [
+    { facet: "brand_filter", value: "27256" },
+    { facet: "brand_filter", value: "8861" },
+    { facet: "price_range_filter", value: "500-999" },
+  ]);
+});
+
+test("nykaa.matches accepts category and search-result pages only", () => {
+  assertEqual(nykaa.matches(new URL("https://www.nykaa.com/makeup/lips/c/15")), true);
+  assertEqual(nykaa.matches(new URL("https://www.nykaa.com/search/result/?q=lipstick")), true);
+  assertEqual(nykaa.matches(new URL("https://www.nykaa.com/")), false);
+});
+
+test("nykaa.build restores the category path from meta and round-trips", () => {
+  const filters = [
+    { facet: "brand_filter", value: "27256" },
+    { facet: "brand_filter", value: "8861" },
+    { facet: "price_range_filter", value: "500-999" },
+  ];
+  const meta = { path: "/makeup/lips/c/15" };
+  const built = nykaa.build(new URL("https://www.nykaa.com/search/result/"), "makeup lips", filters, meta);
+  assertEqual(built.includes("/makeup/lips/c/15"), true);
+  const out = nykaa.parse(new URL(built));
+  assertEqual(out.meta, meta);
+  assertEqual(out.filters, filters);
 });

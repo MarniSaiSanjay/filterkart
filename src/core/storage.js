@@ -7,6 +7,7 @@
 //     canonicalCategory,   // normalized search category (for similarity matching)
 //     search,              // original search term at save time
 //     filters: [ { facet, value } ],
+//     meta,                // optional adapter data for URL rebuild (e.g. category path)
 //     createdAt,           // epoch ms
 //   }
 
@@ -74,6 +75,7 @@ export async function createPreset(preset, store) {
     canonicalCategory: preset.canonicalCategory || "",
     search: preset.search || "",
     filters: Array.isArray(preset.filters) ? preset.filters : [],
+    meta: preset.meta || null,
     createdAt: preset.createdAt || Date.now(),
     updatedAt: preset.updatedAt || preset.createdAt || Date.now(),
   };

@@ -7,12 +7,13 @@
 //     id: string,                          // stable site id, e.g. "amazon"
 //     label: string,                       // human name, e.g. "Amazon"
 //     matches(url: URL): boolean,          // is this a supported results page?
-//     parse(url: URL): { search, filters } // pull out search term + filters
-//     build(baseUrl: URL, search, filters): string  // produce a results URL
+//     parse(url: URL): { search, filters, meta? } // pull out search term + filters
+//     build(baseUrl: URL, search, filters, meta?): string  // produce a results URL
 //   }
 //
 // `filters` is always an array of { facet, value } pairs. Adapters own the
-// mapping between those pairs and their site's URL encoding.
+// mapping between those pairs and their site's URL encoding. `meta` is optional
+// adapter-private data (e.g. a category path) round-tripped from parse to build.
 
 // Assert an object satisfies the adapter contract. Throws on violation.
 export function validateAdapter(a) {

@@ -8,7 +8,8 @@
     "*://*.flipkart.com/*",
     "*://*.amazon.in/*",
     "*://*.myntra.com/*",
-    "*://*.ajio.com/*"
+    "*://*.ajio.com/*",
+    "*://*.nykaa.com/*"
   ],
   "background": {
     "service_worker": "src/background.js",
@@ -38,7 +39,8 @@
         "*://*.flipkart.com/*",
         "*://*.amazon.in/*",
         "*://*.myntra.com/*",
-        "*://*.ajio.com/*"
+        "*://*.ajio.com/*",
+        "*://*.nykaa.com/*"
       ],
       "js": ["src/content/content.js"],
       "run_at": "document_idle"
