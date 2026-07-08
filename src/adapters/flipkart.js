@@ -24,7 +24,11 @@ export default {
   label: "Flipkart",
 
   matches(url) {
-    return /(^|\.)flipkart\.com$/.test(url.hostname) && url.pathname.startsWith("/search");
+    return this.host(url) && url.pathname.startsWith("/search");
+  },
+
+  host(url) {
+    return /(^|\.)flipkart\.com$/.test(url.hostname);
   },
 
   parse(url) {

@@ -1,4 +1,4 @@
-// FilterCart adapter registry.
+// FilterKart adapter registry.
 // Adding a site = import its adapter and add it to ADAPTERS. No other changes.
 import { validateAdapter, toURL } from "../adapters/base.js";
 import flipkart from "../adapters/flipkart.js";
@@ -27,4 +27,23 @@ export function resolveAdapter(url) {
 
 export function getAdapterById(id) {
   return ADAPTERS.find((a) => a.id === id) || null;
+}
+
+// Return the first adapter whose site this URL belongs to (host-only, ignoring
+// whether it is a results page), or null. Lets the popup show a site-aware
+// hint when the user is on a supported site but not a search page.
+export function resolveSite(url) {
+  let u;
+  try {
+    u = toURL(url);
+  } catch {
+    return null;
+  }
+  return ADAPTERS.find((a) => {
+    try {
+      return typeof a.host === "function" && a.host(u);
+    } catch {
+      return false;
+    }
+  }) || null;
 }

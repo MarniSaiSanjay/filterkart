@@ -1,4 +1,4 @@
-// Minimal zero-dependency test helpers for FilterCart.
+// Minimal zero-dependency test helpers for FilterKart.
 // Usage: import { test, run } and register tests, then call run() at file end,
 // or use the aggregate runner in test/index.js.
 

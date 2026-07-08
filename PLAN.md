@@ -1,4 +1,4 @@
-# FilterCart — Implementation Plan
+# FilterKart — Implementation Plan
 
 ## Problem & Approach
 
@@ -22,7 +22,7 @@ Full design lives in `PROJECT.md` (Finalized Architecture section).
 ## Target directory layout
 
 ```
-FilterCart/
+FilterKart/
   manifest.json
   src/
     background.js            # service worker: storage + tab navigation + messaging

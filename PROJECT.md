@@ -1,4 +1,4 @@
-# FilterCart — Shopping Filter Saver Browser Extension
+# FilterKart — Shopping Filter Saver Browser Extension
 
 ## Problem
 

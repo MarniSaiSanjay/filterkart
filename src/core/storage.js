@@ -1,4 +1,4 @@
-// FilterCart preset storage — CRUD over chrome.storage.sync.
+// FilterKart preset storage — CRUD over chrome.storage.sync.
 //
 // Preset schema:
 //   {
@@ -75,6 +75,7 @@ export async function createPreset(preset, store) {
     search: preset.search || "",
     filters: Array.isArray(preset.filters) ? preset.filters : [],
     createdAt: preset.createdAt || Date.now(),
+    updatedAt: preset.updatedAt || preset.createdAt || Date.now(),
   };
   const all = await getAll(s);
   all.push(record);
@@ -88,7 +89,7 @@ export async function updatePreset(id, patch, store) {
   const all = await getAll(s);
   const idx = all.findIndex((p) => p.id === id);
   if (idx === -1) return null;
-  all[idx] = { ...all[idx], ...patch, id: all[idx].id };
+  all[idx] = { ...all[idx], ...patch, id: all[idx].id, updatedAt: Date.now() };
   await setAll(s, all);
   return all[idx];
 }

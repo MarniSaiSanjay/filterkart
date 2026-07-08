@@ -1,0 +1,162 @@
+/* FilterKart manager — "Frosted Ticket" identity. Tokens live in ../ui/theme.css */
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--bg-base);
+  background-image: var(--bg-mesh);
+  background-attachment: fixed;
+  font-family: var(--body);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.ico { display: inline-flex; }
+.ico svg { width: 18px; height: 18px; display: block; }
+
+.shell { display: flex; min-height: 100vh; padding: 18px; gap: 18px; }
+
+/* --- Frosted sidebar ----------------------------------------------------- */
+.sidebar {
+  width: 264px; flex-shrink: 0; padding: 22px 16px;
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: var(--blur-lg); backdrop-filter: var(--blur-lg);
+  border: 1px solid var(--glass-brd); border-radius: 24px;
+  box-shadow: var(--shadow), var(--glass-hi);
+  position: sticky; top: 18px; align-self: flex-start; height: calc(100vh - 36px);
+  display: flex; flex-direction: column; gap: 20px;
+}
+.side-brand { display: flex; align-items: center; gap: 12px; padding: 2px 6px 4px; }
+.logo-tile {
+  width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0; overflow: hidden;
+  background: #fff; box-shadow: 0 6px 16px rgba(53, 56, 230, 0.22); display: flex;
+}
+.logo-tile .logo { width: 100%; height: 100%; display: block; padding: 2px; box-sizing: border-box; }
+.side-title h1 { font-family: var(--display); font-size: 19px; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+.side-title p { font-size: 11px; color: var(--muted); margin: 2px 0 0; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
+
+.side-nav { display: flex; flex-direction: column; gap: 3px; }
+.nav-item {
+  display: flex; align-items: center; gap: 11px; border: none; background: transparent; cursor: pointer;
+  padding: 9px 11px; border-radius: 13px; text-align: left;
+  font-family: var(--display); font-size: 14px; font-weight: 700; color: var(--ink);
+  transition: background 0.12s, color 0.12s;
+}
+.nav-item:hover { background: rgba(255, 255, 255, 0.5); }
+.nav-item.active { background: var(--ink); color: #fff; box-shadow: 0 8px 20px rgba(23, 26, 43, 0.28); }
+.nav-ico {
+  width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.6); color: var(--ink-2);
+  overflow: hidden;
+}
+.nav-ico svg { width: 17px; height: 17px; }
+.nav-fav { width: 20px; height: 20px; border-radius: 6px; display: block; object-fit: contain; }
+.nav-mono { color: #fff; font-family: var(--display); font-weight: 800; font-size: 15px; }
+.nav-item.active .nav-ico { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-count {
+  font-family: var(--mono); font-size: 11.5px; font-weight: 500; color: var(--muted);
+  background: rgba(23, 26, 43, 0.06); border-radius: 999px; padding: 2px 8px; min-width: 24px; text-align: center;
+}
+.nav-item.active .nav-count { color: var(--ink); background: var(--amber); }
+
+/* --- Content ------------------------------------------------------------- */
+.content { flex: 1; min-width: 0; padding: 24px 30px; }
+.panel { max-width: 760px; margin: 0 auto; }
+.muted { color: var(--muted); font-size: 14px; font-weight: 500; }
+.error { color: var(--danger); font-size: 14px; margin: 0 0 12px; font-weight: 600; }
+
+.panel-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px; }
+.panel-head h2 { font-family: var(--display); font-size: 27px; font-weight: 800; margin: 0; letter-spacing: -0.03em; }
+.panel-count { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+
+/* --- Frosted ticket cards ------------------------------------------------ */
+.preset-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.preset {
+  position: relative; overflow: hidden;
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-brd-soft);
+  box-shadow: var(--shadow-sm), var(--glass-hi);
+  border-radius: 18px; padding: 18px 20px 18px 22px;
+}
+.preset::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--spine, var(--primary)); }
+.spine-v { --spine: var(--tile-v); }
+.spine-g { --spine: var(--tile-g); }
+.spine-b { --spine: var(--tile-b); }
+.spine-o { --spine: var(--tile-o); }
+.spine-p { --spine: var(--tile-p); }
+.spine-t { --spine: var(--tile-t); }
+
+.preset-head { display: flex; align-items: center; gap: 15px; }
+.preset-icon {
+  width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center; color: #fff;
+  box-shadow: 0 5px 14px rgba(23, 32, 74, 0.22);
+}
+.preset-icon svg { width: 24px; height: 24px; }
+.tile-v { background: var(--tile-v); }
+.tile-g { background: var(--tile-g); }
+.tile-b { background: var(--tile-b); }
+.tile-o { background: var(--tile-o); }
+.tile-p { background: var(--tile-p); }
+.tile-t { background: var(--tile-t); }
+
+.preset-body { flex: 1; min-width: 0; }
+.preset-topline { display: flex; align-items: center; gap: 10px; }
+.preset-name {
+  font-family: var(--display); font-size: 17px; font-weight: 700; letter-spacing: -0.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.stamp {
+  flex-shrink: 0; font-family: var(--mono); font-weight: 500; font-size: 12px;
+  color: var(--amber-deep); background: rgba(255, 138, 0, 0.14);
+  border-radius: 8px; padding: 2px 8px; letter-spacing: -0.02em;
+}
+.preset-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; font-weight: 500; }
+.preset-search { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--ink-2); margin-top: 6px; font-weight: 500; }
+.preset-search svg { width: 13px; height: 13px; color: var(--muted); }
+
+.preset-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.act {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  border: none; cursor: pointer; border-radius: 12px; font-size: 13.5px; font-weight: 700;
+  font-family: var(--display); transition: transform 0.08s, box-shadow 0.15s, background 0.12s;
+}
+.act svg { width: 17px; height: 17px; }
+.act.open { background: var(--primary); color: #fff; padding: 9px 16px; box-shadow: 0 4px 12px rgba(53, 56, 230, 0.32); }
+.act.open:hover { box-shadow: 0 6px 16px rgba(53, 56, 230, 0.44); }
+.act.open:active { transform: scale(0.96); }
+.act.open:disabled { opacity: 0.6; cursor: default; }
+.act.ghost { width: 38px; height: 38px; padding: 0; background: rgba(255, 255, 255, 0.55); color: var(--muted); }
+.act.ghost:hover { background: rgba(255, 255, 255, 0.9); color: var(--ink); }
+.act.ghost.danger:hover { background: rgba(229, 72, 77, 0.14); color: var(--danger); }
+
+/* Filter chips — the ticket's line-items, below a perforated tear line */
+.chips {
+  display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0 0; padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+.chip {
+  font-size: 12px; font-weight: 600; color: var(--ink-2);
+  background: rgba(255, 255, 255, 0.55); border: 1px solid var(--glass-brd-soft);
+  border-radius: 9px; padding: 4px 10px;
+}
+.chip.more { background: transparent; border: none; color: var(--muted); font-family: var(--mono); font-weight: 500; }
+
+/* Empty state */
+.empty { text-align: center; padding: 64px 20px; }
+.empty-ico {
+  position: relative; width: 64px; height: 64px; border-radius: 20px; margin: 0 auto 18px;
+  background: rgba(53, 56, 230, 0.12); color: var(--primary);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.empty-ico svg { width: 30px; height: 30px; }
+.empty-ico .spark { position: absolute; top: 10px; right: 10px; color: var(--amber); }
+.empty-ico .spark svg { width: 15px; height: 15px; }
+.empty-title { font-family: var(--display); font-size: 18px; font-weight: 700; }
+.empty-desc { font-size: 13.5px; color: var(--ink-2); margin-top: 7px; line-height: 1.5; max-width: 380px; margin-left: auto; margin-right: auto; font-weight: 500; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

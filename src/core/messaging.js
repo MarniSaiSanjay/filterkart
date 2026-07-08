@@ -1,4 +1,4 @@
-// FilterCart message router (dependency-injected so it is unit-testable).
+// FilterKart message router (dependency-injected so it is unit-testable).
 // background.js supplies real chrome-backed deps; tests supply mocks.
 //
 // deps = {
@@ -9,7 +9,7 @@
 //   navigateTab: (tabId, url) => Promise<void>,
 // }
 
-const SITE_ROOTS = {
+export const SITE_ROOTS = {
   flipkart: "https://www.flipkart.com/search",
   amazon: "https://www.amazon.in/s",
   myntra: "https://www.myntra.com/",
@@ -20,7 +20,12 @@ async function getContext(deps) {
   const tab = await deps.getActiveTab();
   if (!tab || !tab.url) return { supported: false };
   const adapter = deps.resolveAdapter(tab.url);
-  if (!adapter) return { supported: false, url: tab.url };
+  if (!adapter) {
+    // On a supported site but not a results page: surface the label so the
+    // popup can show a site-aware hint instead of a generic message.
+    const site = deps.resolveSite ? deps.resolveSite(tab.url) : null;
+    return { supported: false, url: tab.url, knownSite: site ? site.label : null };
+  }
   const { search, filters } = adapter.parse(new URL(tab.url));
   return {
     supported: true,
@@ -37,7 +42,7 @@ async function listForContext(deps) {
   const all = await deps.listPresets();
   if (!context.supported) return { context, matched: [], others: all };
   const forSite = all.filter((p) => p.siteId === context.siteId);
-  const ranked = deps.rankPresets(forSite, context.search, { threshold: 0.5 });
+  const ranked = deps.rankPresets(forSite, context.search, { threshold: 0.6 });
   const matchedIds = new Set(ranked.map((r) => r.preset.id));
   const matched = ranked.map((r) => ({ preset: r.preset, score: r.score }));
   const others = forSite.filter((p) => !matchedIds.has(p.id));
@@ -86,6 +91,27 @@ async function apply(deps, msg) {
   return { url };
 }
 
+// Build the URL a preset would open on its own site, without navigating any
+// tab. Used by the manager page, which opens results in a fresh tab.
+async function buildUrl(deps, msg) {
+  const preset = await deps.getPreset(msg.id);
+  if (!preset) throw new Error("preset not found");
+  const adapter = deps.getAdapterById(preset.siteId);
+  if (!adapter) throw new Error("no adapter for " + preset.siteId);
+  const root = SITE_ROOTS[preset.siteId];
+  if (!root) throw new Error("no root url for " + preset.siteId);
+  const url = adapter.build(new URL(root), preset.search, preset.filters);
+  return { url };
+}
+
+// Everything the manager page needs to render: the full preset library plus
+// the list of supported sites (id + label) for the sidebar.
+async function all(deps) {
+  const presets = await deps.listPresets();
+  const sites = deps.listSites ? deps.listSites() : [];
+  return { presets, sites };
+}
+
 export function createRouter(deps) {
   return async function route(msg) {
     switch (msg && msg.type) {
@@ -97,6 +123,10 @@ export function createRouter(deps) {
         return save(deps, msg);
       case "apply":
         return apply(deps, msg);
+      case "buildUrl":
+        return buildUrl(deps, msg);
+      case "all":
+        return all(deps);
       case "delete":
         return { ok: await deps.deletePreset(msg.id) };
       case "rename":
@@ -106,5 +136,3 @@ export function createRouter(deps) {
     }
   };
 }
-
-export { SITE_ROOTS };

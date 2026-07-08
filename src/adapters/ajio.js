@@ -25,9 +25,13 @@ export default {
 
   matches(url) {
     return (
-      /(^|\.)ajio\.com$/.test(url.hostname) &&
+      this.host(url) &&
       (url.pathname.startsWith("/search") || url.pathname.startsWith("/s/"))
     );
+  },
+
+  host(url) {
+    return /(^|\.)ajio\.com$/.test(url.hostname);
   },
 
   parse(url) {

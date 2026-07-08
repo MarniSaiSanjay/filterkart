@@ -32,7 +32,11 @@ export default {
   label: "Myntra",
 
   matches(url) {
-    return /(^|\.)myntra\.com$/.test(url.hostname) && url.pathname.length > 1;
+    return this.host(url) && url.pathname.length > 1;
+  },
+
+  host(url) {
+    return /(^|\.)myntra\.com$/.test(url.hostname);
   },
 
   parse(url) {

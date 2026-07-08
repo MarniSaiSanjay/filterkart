@@ -10,7 +10,11 @@ export default {
   label: "Amazon",
 
   matches(url) {
-    return /(^|\.)amazon\.in$/.test(url.hostname) && url.pathname.startsWith("/s");
+    return this.host(url) && url.pathname.startsWith("/s");
+  },
+
+  host(url) {
+    return /(^|\.)amazon\.in$/.test(url.hostname);
   },
 
   parse(url) {

@@ -2,7 +2,7 @@ import { setFile, test, assert, assertEqual } from "./harness.js";
 import { mockStore } from "./mock-store.js";
 import { createRouter } from "../src/core/messaging.js";
 import * as storage from "../src/core/storage.js";
-import { resolveAdapter, getAdapterById } from "../src/core/registry.js";
+import { resolveAdapter, resolveSite, getAdapterById } from "../src/core/registry.js";
 import { normalize, rankPresets } from "../src/core/matcher.js";
 
 setFile("messaging");
@@ -19,11 +19,18 @@ function makeRouter({ url } = {}) {
     updatePreset: (id, patch) => storage.updatePreset(id, patch, store),
     getPreset: (id) => storage.getPreset(id, store),
     resolveAdapter,
+    resolveSite,
     getAdapterById,
     normalize,
     rankPresets,
     getActiveTab: async () => tab,
     navigateTab: async (id, u) => navigations.push({ id, url: u }),
+    listSites: () => [
+      { id: "flipkart", label: "Flipkart" },
+      { id: "amazon", label: "Amazon" },
+      { id: "myntra", label: "Myntra" },
+      { id: "ajio", label: "Ajio" },
+    ],
   };
   return { route: createRouter(deps), navigations, store, tab };
 }
@@ -44,6 +51,14 @@ test("context reports unsupported for unknown site", async () => {
   const { route } = makeRouter({ url: "https://www.example.com/x" });
   const ctx = await route({ type: "context" });
   assertEqual(ctx.supported, false);
+  assertEqual(ctx.knownSite, null);
+});
+
+test("context surfaces the site label on a supported site's non-results page", async () => {
+  const { route } = makeRouter({ url: "https://www.amazon.in/ref=nav_logo" });
+  const ctx = await route({ type: "context" });
+  assertEqual(ctx.supported, false);
+  assertEqual(ctx.knownSite, "Amazon");
 });
 
 test("save stores a preset parsed from the active tab", async () => {
@@ -125,4 +140,29 @@ test("unknown message type throws", async () => {
     threw = true;
   }
   assert(threw, "should reject unknown types");
+});
+
+test("all returns every preset plus the site list for the manager", async () => {
+  const { route } = makeRouter({ url: AMAZON_URL });
+  await route({ type: "save", name: "Laptops" });
+  const res = await route({ type: "all" });
+  assertEqual(res.presets.length, 1);
+  assertEqual(res.presets[0].name, "Laptops");
+  assertEqual(res.sites.length, 4);
+  assert(res.sites.some((s) => s.id === "amazon" && s.label === "Amazon"), "includes amazon site");
+});
+
+test("buildUrl produces a re-parseable site URL without navigating", async () => {
+  const r = makeRouter({ url: AMAZON_URL });
+  const { preset } = await r.route({ type: "save", name: "p" });
+
+  // Simulate the manager tab (not a shopping page).
+  r.tab.url = "chrome-extension://abc/src/manager/manager.html";
+
+  const res = await r.route({ type: "buildUrl", id: preset.id });
+  assert(res.url.startsWith("https://www.amazon.in/s"), "builds an amazon search URL");
+  const back = getAdapterById("amazon").parse(new URL(res.url));
+  assertEqual(back.search, "laptop");
+  assertEqual(back.filters.length, 2);
+  assertEqual(r.navigations.length, 0); // must NOT navigate any tab
 });

@@ -1,9 +1,18 @@
-// FilterCart background service worker.
+// FilterKart background service worker.
 // Wires Chrome APIs to the dependency-injected message router.
 import * as storage from "./core/storage.js";
-import { resolveAdapter, getAdapterById } from "./core/registry.js";
+import { ADAPTERS, resolveAdapter, getAdapterById, resolveSite } from "./core/registry.js";
 import { normalize, rankPresets } from "./core/matcher.js";
-import { createRouter } from "./core/messaging.js";
+import { createRouter, SITE_ROOTS } from "./core/messaging.js";
+
+function siteHome(id) {
+  const root = SITE_ROOTS[id];
+  try {
+    return root ? new URL(root).origin : null;
+  } catch {
+    return null;
+  }
+}
 
 const deps = {
   listPresets: () => storage.listPresets(),
@@ -12,7 +21,9 @@ const deps = {
   updatePreset: (id, patch) => storage.updatePreset(id, patch),
   getPreset: (id) => storage.getPreset(id),
   resolveAdapter,
+  resolveSite,
   getAdapterById,
+  listSites: () => ADAPTERS.map((a) => ({ id: a.id, label: a.label, home: siteHome(a.id) })),
   normalize,
   rankPresets,
   getActiveTab: async () => {
@@ -33,5 +44,5 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log("FilterCart installed");
+  console.log("FilterKart installed");
 });

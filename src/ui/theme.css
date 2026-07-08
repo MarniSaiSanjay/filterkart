@@ -1,0 +1,68 @@
+/* FilterKart design system — "Frosted Ticket".
+   A saved preset is a ticket you keep and re-scan, rendered on iOS-style
+   frosted glass: translucent surfaces floating over a soft colour mesh.
+   Shared by popup and manager. */
+
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("fonts/manrope-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DM Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/dm-mono-500-latin.woff2") format("woff2");
+}
+
+:root {
+  /* Ink & neutrals */
+  --ink: #171a2b;
+  --ink-2: #4b4f66;
+  --muted: #7c8099;
+  --line: rgba(23, 26, 43, 0.08);
+
+  /* Ambient mesh painted behind the glass (soft iOS light wallpaper) */
+  --bg-base: #e7ecf6;
+  --bg-mesh:
+    radial-gradient(42% 46% at 12% 6%, rgba(126, 132, 255, 0.42), transparent 60%),
+    radial-gradient(46% 50% at 92% 8%, rgba(255, 168, 92, 0.34), transparent 62%),
+    radial-gradient(50% 54% at 82% 96%, rgba(94, 196, 255, 0.36), transparent 60%),
+    radial-gradient(50% 56% at 6% 92%, rgba(236, 132, 200, 0.30), transparent 62%);
+
+  /* Glass materials */
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-strong: rgba(255, 255, 255, 0.68);
+  --glass-soft: rgba(255, 255, 255, 0.36);
+  --glass-brd: rgba(255, 255, 255, 0.7);
+  --glass-brd-soft: rgba(255, 255, 255, 0.5);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --blur: saturate(180%) blur(22px);
+  --blur-lg: saturate(190%) blur(34px);
+  --shadow-sm: 0 4px 18px rgba(23, 32, 74, 0.12);
+  --shadow: 0 12px 40px rgba(23, 32, 74, 0.18);
+
+  /* Accents */
+  --primary: #3538e6; /* ultramarine — actions */
+  --primary-ink: #2a2cc4;
+  --amber: #ff8a00; /* signature "saved" accent */
+  --amber-deep: #e07600;
+  --danger: #e5484d;
+  --ok: #17b26a;
+
+  /* Type */
+  --display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --body: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: "DM Mono", ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+  /* Category ticket colours (spine + tile) */
+  --tile-v: #6d5cf0;
+  --tile-g: #17b26a;
+  --tile-b: #3b7ff5;
+  --tile-o: #ff8a3d;
+  --tile-p: #ec4899;
+  --tile-t: #14b8a6;
+}

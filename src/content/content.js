@@ -1,12 +1,12 @@
-// FilterCart content script.
+// FilterKart content script.
 // Injects a small, style-isolated floating button on supported result pages
 // that gives quick access to Save (current filters) and Apply (matching preset)
 // without opening the toolbar popup. All logic is delegated to the background
 // message router via chrome.runtime.sendMessage, so this stays UI-only.
 
 (function () {
-  if (window.__filterCartInjected) return;
-  window.__filterCartInjected = true;
+  if (window.__filterKartInjected) return;
+  window.__filterKartInjected = true;
 
   function send(msg) {
     return new Promise((resolve, reject) => {
@@ -20,47 +20,76 @@
     });
   }
 
+  // Suggest a preset name that doesn't collide with an existing one:
+  // "mobiles" -> "mobiles 2" -> "mobiles 3" ... (case-insensitive).
+  function uniqueName(base, taken) {
+    const set = new Set((taken || []).map((n) => String(n).trim().toLowerCase()));
+    const b = String(base || "").trim();
+    if (!b || !set.has(b.toLowerCase())) return b;
+    let i = 2;
+    while (set.has(`${b} ${i}`.toLowerCase())) i++;
+    return `${b} ${i}`;
+  }
+
   const host = document.createElement("div");
-  host.id = "filtercart-root";
+  host.id = "filterkart-root";
   const root = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
   style.textContent = `
     :host { all: initial; }
     .fab {
-      position: fixed; right: 16px; bottom: 16px; z-index: 2147483647;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      position: fixed; right: 18px; bottom: 18px; z-index: 2147483647;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
     }
     .toggle {
-      background: #2874f1; color: #fff; border: none; border-radius: 20px;
-      padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      display: inline-flex; align-items: center; gap: 7px;
+      background: #fff; color: #1c1c1e;
+      border: 1px solid rgba(60,60,67,0.14); border-radius: 999px;
+      padding: 9px 15px; font-size: 13px; font-weight: 600;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+      transition: transform 0.12s, background 0.15s;
     }
-    .toggle:hover { background: #1c5fd0; }
+    .toggle::before {
+      content: ""; width: 7px; height: 7px; border-radius: 50%; background: #4f46e5;
+    }
+    .toggle:hover { transform: translateY(-1px); background: #fafafa; }
+    .toggle:active { transform: scale(0.97); }
     .panel {
-      position: absolute; right: 0; bottom: 48px; width: 260px;
-      background: #fff; color: #1a1a1a; border: 1px solid #e5e7eb;
-      border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,0.18);
-      padding: 12px; display: none;
+      position: absolute; right: 0; bottom: 52px; width: 280px;
+      background: #fff; color: #1c1c1e;
+      border: 1px solid rgba(60,60,67,0.12);
+      border-radius: 14px; box-shadow: 0 10px 34px rgba(0,0,0,0.16);
+      overflow: hidden; display: none;
     }
-    .panel.open { display: block; }
-    .title { font-size: 13px; font-weight: 600; margin: 0 0 8px; color: #2874f1; }
-    .muted { font-size: 12px; color: #6b7280; line-height: 1.4; }
-    .row { display: flex; gap: 6px; margin-bottom: 8px; }
+    .panel.open { display: block; animation: fc-pop 0.14s ease-out; }
+    @keyframes fc-pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .title { font-size: 13px; font-weight: 600; margin: 0; padding: 12px 14px; border-bottom: 1px solid rgba(60,60,67,0.12); letter-spacing: -0.01em; }
+    .muted { font-size: 12px; color: #8a8a8e; line-height: 1.5; padding: 12px 14px; margin: 0; }
+    .row { display: flex; gap: 7px; padding: 12px 14px; border-bottom: 1px solid rgba(60,60,67,0.12); margin: 0; }
     input {
-      flex: 1; min-width: 0; padding: 6px 8px; font-size: 12px;
-      border: 1px solid #e5e7eb; border-radius: 6px;
+      flex: 1; min-width: 0; padding: 8px 11px; font-size: 12px;
+      border: none; border-radius: 8px; background: rgba(120,120,128,0.1);
+      transition: box-shadow 0.15s, background 0.15s;
     }
+    input:focus { outline: none; background: #fff; box-shadow: 0 0 0 1px rgba(79,70,229,0.4), 0 0 0 3px rgba(79,70,229,0.12); }
     button.act {
-      font-size: 12px; padding: 6px 10px; border-radius: 6px; cursor: pointer;
-      border: 1px solid #2874f1; background: #2874f1; color: #fff;
+      font-size: 12px; font-weight: 600; padding: 8px 12px; border-radius: 8px; cursor: pointer;
+      border: none; background: rgba(79,70,229,0.1); color: #4f46e5;
+      transition: background 0.15s, transform 0.06s;
     }
-    button.act.ghost { background: #fff; color: #1a1a1a; border-color: #e5e7eb; }
-    ul { list-style: none; margin: 6px 0 0; padding: 0; max-height: 180px; overflow: auto; }
+    button.act:hover { background: rgba(79,70,229,0.17); }
+    button.act:active { transform: scale(0.97); }
+    button.act:disabled { opacity: 0.5; cursor: default; }
+    button.act.ghost { background: rgba(120,120,128,0.1); color: #1c1c1e; }
+    button.act.ghost:hover { background: rgba(120,120,128,0.16); }
+    ul { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow: auto; }
     li {
       display: flex; align-items: center; justify-content: space-between;
-      gap: 6px; padding: 6px 0; border-top: 1px solid #f0f0f0; font-size: 12px;
+      gap: 8px; padding: 10px 14px; font-size: 12px;
+      border-bottom: 1px solid rgba(60,60,67,0.1);
     }
-    .pname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    li:hover { background: rgba(120,120,128,0.06); }
+    .pname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; font-size: 13px; }
   `;
   root.appendChild(style);
 
@@ -68,7 +97,7 @@
   fab.className = "fab";
   const toggle = document.createElement("button");
   toggle.className = "toggle";
-  toggle.textContent = "FilterCart";
+  toggle.textContent = "FilterKart";
   const panel = document.createElement("div");
   panel.className = "panel";
   fab.appendChild(panel);
@@ -79,7 +108,7 @@
     panel.textContent = "";
     const heading = document.createElement("p");
     heading.className = "title";
-    heading.textContent = "FilterCart";
+    heading.textContent = "FilterKart";
     panel.appendChild(heading);
 
     let data;
@@ -103,12 +132,16 @@
     }
 
     const count = context.filters ? context.filters.length : 0;
+    const existingNames = [
+      ...(matched || []).map((m) => m.preset.name),
+      ...(others || []).map((p) => p.name),
+    ];
     if (count > 0) {
       const row = document.createElement("div");
       row.className = "row";
       const input = document.createElement("input");
       input.placeholder = "Preset name";
-      input.value = context.search || "";
+      input.value = uniqueName(context.search || "", existingNames);
       const save = document.createElement("button");
       save.className = "act";
       save.textContent = "Save";
@@ -121,6 +154,7 @@
           refresh();
         } catch (e) {
           save.textContent = "Error";
+          save.disabled = false;
         }
       });
       row.appendChild(input);

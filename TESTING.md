@@ -1,4 +1,4 @@
-# FilterCart — Manual Test Checklist (WI-16)
+# FilterKart — Manual Test Checklist (WI-16)
 
 Automated coverage (already green): `npm run verify` (41 unit tests) and
 `node scripts/e2e-check.js` (parse → build → parse round-trip on real URLs for all
@@ -13,7 +13,7 @@ extension UI and authenticated, JS-rendered result pages.
 
 1. Open `chrome://extensions`.
 2. Toggle **Developer mode** on (top-right).
-3. Click **Load unpacked** → select the repo root (`FilterCart`).
+3. Click **Load unpacked** → select the repo root (`FilterKart`).
 4. Confirm the funnel icon appears in the toolbar and there are **no errors**
    listed on the extension card.
 
@@ -23,7 +23,7 @@ Sign in first if the site needs it.
 
 1. Run a search (e.g. *laptop* / *running shoes*).
 2. Apply a few filters through the site UI (brands, price, rating, size…).
-3. Click the FilterCart toolbar icon.
+3. Click the FilterKart toolbar icon.
    - [ ] Site badge + current search term shown correctly.
    - [ ] Filter count matches what you applied.
 4. Name the preset and click **Save**.
@@ -33,7 +33,7 @@ Sign in first if the site needs it.
 6. Open the popup and click **Apply** on the saved preset.
    - [ ] Page navigates and the saved filters are re-applied.
    - [ ] For a similar search, filters apply to the *current* search term.
-7. Open the in-page **FilterCart** button (bottom-right).
+7. Open the in-page **FilterKart** button (bottom-right).
    - [ ] Save and Apply work the same way from there.
 8. Try **rename** and **delete** from the popup.
    - [ ] Both update the list correctly.

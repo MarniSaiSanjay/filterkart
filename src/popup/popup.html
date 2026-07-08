@@ -3,12 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FilterCart</title>
+    <title>FilterKart</title>
+    <link rel="stylesheet" href="../ui/theme.css" />
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header><h1>FilterCart</h1></header>
-    <main id="app"><p class="muted">Loading…</p></main>
+    <div class="window">
+      <header>
+        <span class="logo-tile"><img class="logo" src="../../icons/icon48.png" alt="FilterKart" /></span>
+        <div class="brand">
+          <h1>FilterKart</h1>
+          <p class="tagline">Save &amp; reapply shopping filters</p>
+        </div>
+        <button id="settings-btn" class="settings-btn" title="Saved filters &amp; settings" aria-label="Settings"></button>
+      </header>
+      <main id="app"><p class="muted">Loading…</p></main>
+    </div>
     <script type="module" src="popup.js"></script>
   </body>
 </html>

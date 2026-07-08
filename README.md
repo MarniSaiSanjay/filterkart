@@ -1,9 +1,9 @@
-# FilterCart
+# FilterKart
 
 Save your shopping-site filter selections once and reapply them with a single click.
 
-FilterCart is a Manifest V3 Chrome extension. Filters on the supported sites are fully
-encoded in the page URL, so FilterCart works by **capturing the filter parameters from the
+FilterKart is a Manifest V3 Chrome extension. Filters on the supported sites are fully
+encoded in the page URL, so FilterKart works by **capturing the filter parameters from the
 current URL** when you save, and **rebuilding the URL** for your current (or a similar) search
 when you apply — no fragile DOM clicking.
 
@@ -20,22 +20,23 @@ The architecture is adapter-based, so more sites can be added by dropping a new 
 ## How it works
 
 1. Open a supported site and apply the filters you want (brands, price, rating, size, …).
-2. Click the FilterCart toolbar icon (or the in-page **FilterCart** button).
+2. Click the FilterKart toolbar icon (or the in-page **FilterKart** button).
 3. Give the preset a name and click **Save**.
-4. Later, on the same site — even for a *similar* search — open FilterCart and click **Apply**.
-   FilterCart rebuilds the URL with your saved filters and navigates there.
+4. Later, on the same site — even for a *similar* search — open FilterKart and click **Apply**.
+   FilterKart rebuilds the URL with your saved filters and navigates there.
 
 Presets are stored in `chrome.storage.sync`, so they roam with your Chrome profile.
 Applying to a *similar* search is handled by a pluggable similarity matcher
 (`src/core/matcher.js`); e.g. "running shoes" and "sports shoes" are treated as the same
-category.
+category. Typo tolerance uses the **Jaro-Winkler** string-similarity algorithm
+(implemented in-repo, no dependencies) so "mobilsss" still matches "mobile".
 
 ## Install (Load unpacked)
 
 1. Open `chrome://extensions`.
 2. Enable **Developer mode** (top-right).
 3. Click **Load unpacked** and select this project folder.
-4. The FilterCart icon appears in the toolbar.
+4. The FilterKart icon appears in the toolbar.
 
 ## Development
 

@@ -1,4 +1,4 @@
-# FilterCart — Work Items
+# FilterKart — Work Items
 
 MV3 extension, plain JS, no build. Filters = URL state. See `PLAN.md` and `PROJECT.md` for detail.
 

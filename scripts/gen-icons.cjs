@@ -1,4 +1,4 @@
-// FilterCart icon generator.
+// FilterKart icon generator.
 // Design: a filter FUNNEL pouring into a shopping CART on a rounded gradient
 // tile (teal -> indigo) with a gold spark accent -> literally "Filter + Cart".
 // Size-aware: the 16px toolbar icon shows only the funnel + spark (the cart is

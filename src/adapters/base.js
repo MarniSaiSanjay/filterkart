@@ -1,6 +1,6 @@
-// FilterCart site-adapter contract and shared helpers.
+// FilterKart site-adapter contract and shared helpers.
 //
-// An adapter teaches FilterCart how one shopping site encodes filters in its URL.
+// An adapter teaches FilterKart how one shopping site encodes filters in its URL.
 // Each adapter is a plain object:
 //
 //   {

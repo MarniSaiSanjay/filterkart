@@ -1,5 +1,5 @@
 {
-  "name": "filtercart",
+  "name": "filterkart",
   "version": "0.1.0",
   "description": "Save and reapply shopping-site filter presets with one click.",
   "type": "module",
