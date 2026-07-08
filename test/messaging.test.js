@@ -99,6 +99,23 @@ test("delete and rename work", async () => {
   assertEqual(del.ok, true);
 });
 
+test("apply from an unsupported page uses the preset's saved search and site root", async () => {
+  // Save a preset on Amazon, then navigate to an unrelated (unsupported) page
+  // and apply it. The preset's own search must be used and the URL must be a
+  // valid, re-parseable Amazon search URL.
+  const r = makeRouter({ url: AMAZON_URL });
+  const { preset } = await r.route({ type: "save", name: "p" });
+
+  r.tab.url = "https://news.example.com/article";
+
+  const res = await r.route({ type: "apply", id: preset.id });
+  assert(res.url.startsWith("https://www.amazon.in/s"), "navigates to the amazon site root");
+  const back = getAdapterById("amazon").parse(new URL(res.url));
+  assertEqual(back.search, "laptop");
+  assertEqual(back.filters.length, 2);
+  assertEqual(r.navigations.length, 1);
+});
+
 test("unknown message type throws", async () => {
   const { route } = makeRouter({ url: AMAZON_URL });
   let threw = false;
