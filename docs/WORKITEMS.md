@@ -17,6 +17,14 @@ MV3 extension, plain JS, no build. Filters = URL state. See `PLAN.md` and `PROJE
 | WI-11 | Popup UI                           | WI-10, WI-03, WI-09   |
 | WI-12 | Content script (in-page button)    | WI-11                 |
 | WI-13 | Manual test pass & docs (README)   | all                   |
+| WI-14 | Trim unused scripting permission   | WI-02                 |
+| WI-15 | Real extension icons               | WI-02                 |
+| WI-16 | Live validation (4 sites)          | WI-05..WI-08          |
+| WI-17 | Nykaa adapter                      | WI-04                 |
+| WI-18 | Meesho adapter                     | WI-04                 |
+| WI-19 | Croma adapter                      | WI-04                 |
+| WI-20 | Manager UX polish                  | WI-11                 |
+| WI-21 | Docs reorg into `docs/`            | WI-13                 |
 
 ## Details
 
@@ -33,3 +41,11 @@ MV3 extension, plain JS, no build. Filters = URL state. See `PLAN.md` and `PROJE
 - **WI-11** — detect site/search; Save (+name); list matching presets; Apply; rename/delete.
 - **WI-12** — optional in-page Save/Apply button on supported result pages.
 - **WI-13** — load-unpacked test on all four sites; `README.md`; final status update.
+- **WI-14** — drop the unused `scripting` permission from the manifest.
+- **WI-15** — real branded extension icons (16/48/128) generated via `scripts/gen-icons.cjs`.
+- **WI-16** — live validation of the first four adapters against real pages (see STATUS).
+- **WI-17** — Nykaa: `<Facet>=<value>` params; `meta.path` preserves category/brand path.
+- **WI-18** — Meesho: opaque triple `<Facet>[i][id|label|payload]`, payload = base64(`{field,op,value}`); verbatim replay (adapter stores id + payload on each filter).
+- **WI-19** — Croma: SAP Hybris colon-chain `q=<term>:<sort>:<facet>:<value>:…`; `/searchB` search pages (dup `text=`) and `/<slug>/c/<id>` category pages via `meta.path`.
+- **WI-20** — Manager polish: full-tab library, inline rename/delete, card hover, per-section site logos, sidebar sites ordered by preset count, brand-logo cleanup, sidebar footer.
+- **WI-21** — move `ONBOARDING`/`PLAN`/`PROJECT`/`STATUS`/`TESTING`/`WORKITEMS` under `docs/`; keep `README.md` at root.
