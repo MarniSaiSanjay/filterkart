@@ -286,3 +286,24 @@ To be verified live.
 - Live inspection done by driving a real Chrome via CDP (remote debugging port `9222`) with
   Playwright (`playwright-core`), using a dedicated profile so login state can persist.
 - Inspection scripts live in `scripts/` (`inspect.js`, `dom.js`, `click.js`, `verify.js`).
+
+# Future UI — scaling the supported-site list
+
+Today the manager's left sidebar lists every supported site as a flat nav list, and each
+preset card shows up to 6 filter pills (then a `+N more` pill). Both are fine at the current
+scale (5 sites).
+
+As the number of supported sites grows, a flat sidebar list stops being a good first screen.
+Planned evolution (not yet built):
+
+- **Landing grid:** on first open (or an "All sites" view), show the supported apps as a
+  **logo grid in the center** — think an app launcher — instead of a long sidebar list.
+- **Drill-in:** selecting a site from the grid switches to that site's presets (the current
+  per-site panel). The sidebar can then collapse to recently/most-used sites, with a "Browse
+  all" affordance back to the grid.
+- **Optional cap + search:** once past ~8–10 sites, cap the sidebar to the top few by preset
+  count / recency and add a filter/search box, so the list never scrolls indefinitely.
+
+No core changes are needed for this — `listSites()` already returns every adapter with its
+`home` (used for the live favicon), so the grid is purely a manager-side render change.
+
