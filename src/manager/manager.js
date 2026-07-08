@@ -83,13 +83,93 @@ function navItem(site) {
 function renderNav() {
   nav.textContent = "";
   nav.appendChild(navItem({ id: "all", label: "All presets" }));
-  // Order sites by how many presets they hold (most-used first) so the sites a
-  // user actively saves to stay near the top; ties fall back to label order.
-  const ordered = [...state.sites].sort((a, b) => {
-    const diff = countFor(b.id) - countFor(a.id);
-    return diff !== 0 ? diff : labelFor(a.id).localeCompare(labelFor(b.id));
+  // Only sites the user actually uses (have >=1 preset) appear in the sidebar,
+  // most-used first; ties fall back to label order. This keeps the sidebar a
+  // mirror of the user's activity rather than a growing list of every adapter.
+  const used = state.sites
+    .filter((s) => countFor(s.id) > 0)
+    .sort((a, b) => {
+      const diff = countFor(b.id) - countFor(a.id);
+      return diff !== 0 ? diff : labelFor(a.id).localeCompare(labelFor(b.id));
+    });
+  for (const site of used) nav.appendChild(navItem(site));
+  // Supported-but-unused sites live behind a compact "＋" discovery affordance,
+  // but only once the user has started using at least one site. On first run the
+  // full list is surfaced center-stage via the empty state instead.
+  const unused = state.sites.filter((s) => countFor(s.id) === 0);
+  if (used.length && unused.length) nav.appendChild(discoveryAffordance(unused));
+}
+
+// A small avatar-stack + "＋" row pinned under the used-site list. Clicking it
+// opens a popover listing every supported site the user hasn't used yet; each
+// entry opens that site's home page so they can go apply filters and save.
+function discoveryAffordance(unused) {
+  const wrap = el("div", { class: "nav-add-wrap" });
+  const stack = el(
+    "span",
+    { class: "add-stack" },
+    unused.slice(0, 3).map((s) => {
+      const ic = siteIcon(s);
+      ic.classList.add("add-mini");
+      return ic;
+    })
+  );
+  const btn = el(
+    "button",
+    {
+      class: "nav-item nav-add",
+      title: "Discover more supported sites",
+      onclick: (ev) => {
+        ev.stopPropagation();
+        toggleAddPopover(wrap, unused);
+      },
+    },
+    [
+      el("span", { class: "nav-ico add-plus" }, [icon("plus")]),
+      el("span", { class: "nav-label", text: "More sites" }),
+      stack,
+    ]
+  );
+  wrap.appendChild(btn);
+  return wrap;
+}
+
+function toggleAddPopover(wrap, unused) {
+  const open = wrap.querySelector(".add-pop");
+  if (open) {
+    open.remove();
+    return;
+  }
+  const items = unused.map((s) => {
+    const ic = siteIcon(s);
+    ic.classList.add("add-mini");
+    return el(
+      "a",
+      {
+        class: "add-pop-item",
+        href: s.home || "#",
+        target: "_blank",
+        rel: "noopener",
+        title: `Open ${s.label}`,
+      },
+      [ic, el("span", { text: s.label })]
+    );
   });
-  for (const site of ordered) nav.appendChild(navItem(site));
+  const pop = el("div", { class: "add-pop" }, [
+    el("div", { class: "add-pop-head", text: "Also supported" }),
+    ...items,
+  ]);
+  wrap.appendChild(pop);
+  // Dismiss on any outside click (deferred so this same click doesn't close it).
+  setTimeout(() => {
+    const onDoc = (e) => {
+      if (!wrap.contains(e.target)) {
+        pop.remove();
+        document.removeEventListener("click", onDoc);
+      }
+    };
+    document.addEventListener("click", onDoc);
+  }, 0);
 }
 
 // --- preset cards ----------------------------------------------------------
@@ -278,6 +358,33 @@ function presetCard(preset) {
 
 // --- main panel ------------------------------------------------------------
 
+// A "Works on" grid of clickable site chips for the first-run empty state (no
+// presets anywhere), so a brand-new user immediately sees which sites are
+// supported and can jump straight to one to start shopping. Each chip opens
+// that site's home page in a new tab.
+function supportedSitesHint() {
+  if (!state.sites.length) return null;
+  const chips = state.sites.map((site) => {
+    const logo = siteIcon(site);
+    logo.classList.add("supported-ico");
+    return el(
+      "a",
+      {
+        class: "supported-chip",
+        href: site.home || "#",
+        target: "_blank",
+        rel: "noopener",
+        title: `Open ${site.label}`,
+      },
+      [logo, el("span", { text: site.label })]
+    );
+  });
+  return el("div", { class: "supported" }, [
+    el("div", { class: "supported-label", text: "Works on" }),
+    el("div", { class: "supported-row" }, chips),
+  ]);
+}
+
 function renderPanel() {
   panel.textContent = "";
   const items = state.presets
@@ -302,19 +409,20 @@ function renderPanel() {
   panel.appendChild(headEl);
 
   if (!items.length) {
-    panel.appendChild(
-      el("div", { class: "empty" }, [
-        el("div", { class: "empty-ico" }, [icon("funnel"), icon("spark", "spark")]),
-        el("div", { class: "empty-title", text: "No saved presets here yet" }),
-        el("div", {
-          class: "empty-desc",
-          text:
-            state.selected === "all"
-              ? "Open a shopping site, apply filters, then use the FilterKart popup to save them."
-              : `You haven't saved any ${labelFor(state.selected)} presets yet.`,
-        }),
-      ])
-    );
+    const empty = el("div", { class: "empty" }, [
+      el("div", { class: "empty-ico" }, [icon("funnel"), icon("spark", "spark")]),
+      el("div", { class: "empty-title", text: "No saved presets here yet" }),
+      el("div", {
+        class: "empty-desc",
+        text:
+          state.selected === "all"
+            ? "Open a shopping site, apply filters, then use the FilterKart popup to save them."
+            : `You haven't saved any ${labelFor(state.selected)} presets yet.`,
+      }),
+    ]);
+    const hint = state.selected === "all" ? supportedSitesHint() : null;
+    if (hint) empty.appendChild(hint);
+    panel.appendChild(empty);
     return;
   }
 
@@ -328,7 +436,7 @@ async function load() {
     const { presets, sites } = await send({ type: "all" });
     state.presets = presets || [];
     state.sites = sites || [];
-    if (state.selected !== "all" && !state.sites.some((s) => s.id === state.selected)) {
+    if (state.selected !== "all" && countFor(state.selected) === 0) {
       state.selected = "all";
     }
     renderNav();
