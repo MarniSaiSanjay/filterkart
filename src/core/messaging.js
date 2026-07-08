@@ -15,6 +15,7 @@ export const SITE_ROOTS = {
   myntra: "https://www.myntra.com/",
   ajio: "https://www.ajio.com/search/",
   nykaa: "https://www.nykaa.com/search/result/",
+  meesho: "https://www.meesho.com/search",
 };
 
 async function getContext(deps) {

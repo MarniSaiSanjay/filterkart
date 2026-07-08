@@ -14,6 +14,7 @@ when you apply — no fragile DOM clicking.
 - Myntra
 - Ajio
 - Nykaa
+- Meesho
 
 The architecture is adapter-based, so more sites can be added by dropping a new adapter into
 `src/adapters/` and registering it — see [ONBOARDING.md](ONBOARDING.md) for the step-by-step
@@ -60,7 +61,7 @@ src/core/messaging.js  dependency-injected router (context/list/save/apply/delet
 src/core/storage.js    preset CRUD over chrome.storage.sync
 src/core/registry.js   adapter registry + URL resolution
 src/core/matcher.js    search normalizer + similarity ranking
-src/adapters/*.js      per-site parse/build (flipkart, amazon, myntra, ajio, nykaa)
+src/adapters/*.js      per-site parse/build (flipkart, amazon, myntra, ajio, nykaa, meesho)
 src/popup/*            toolbar popup UI
 src/content/content.js in-page floating button (style-isolated via shadow DOM)
 test/*                 zero-dependency test harness + suites

@@ -39,7 +39,7 @@ test("toURL accepts string and URL", () => {
 });
 
 test("all registered adapters are valid", () => {
-  assert(ADAPTERS.length === 5, "five adapters registered");
+  assert(ADAPTERS.length === 6, "six adapters registered");
 });
 
 test("resolveAdapter picks the right site", () => {
