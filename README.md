@@ -18,8 +18,8 @@ when you apply — no fragile DOM clicking.
 - Croma
 
 The architecture is adapter-based, so more sites can be added by dropping a new adapter into
-`src/adapters/` and registering it — see [ONBOARDING.md](ONBOARDING.md) for the step-by-step
-guide and [PROJECT.md](PROJECT.md) for the design.
+`src/adapters/` and registering it — see [docs/ONBOARDING.md](docs/ONBOARDING.md) for the step-by-step
+guide and [docs/PROJECT.md](docs/PROJECT.md) for the design.
 
 ## How it works
 
@@ -78,7 +78,7 @@ test/*                 zero-dependency test harness + suites
 
 > Note: automated "load unpacked" testing via Chrome command-line flags is not possible on
 > recent Chrome stable builds (the `--load-extension` switch is disabled). Use the manual
-> **Load unpacked** steps above to try it in a browser. See [TESTING.md](TESTING.md) for a
+> **Load unpacked** steps above to try it in a browser. See [docs/TESTING.md](docs/TESTING.md) for a
 > step-by-step manual test checklist.
 
 ## Scope
