@@ -118,6 +118,9 @@ function presetCard(preset) {
     (state.selected === "all" ? labelFor(preset.siteId) : `${n} filter${n === 1 ? "" : "s"}`) +
     (when ? ` \u00b7 Updated ${timeAgo(when)}` : "");
 
+  const nameEl = el("div", { class: "preset-name", text: preset.name });
+  const topline = el("div", { class: "preset-topline" }, [nameEl, stamp]);
+
   const open = el(
     "button",
     {
@@ -140,55 +143,128 @@ function presetCard(preset) {
     [icon("external"), el("span", { text: "Open" })]
   );
 
-  const rename = el(
-    "button",
-    {
-      class: "act ghost",
-      title: "Rename",
-      onclick: async () => {
-        const name = window.prompt("Rename preset", preset.name);
-        if (!name || name.trim() === preset.name) return;
-        try {
-          await send({ type: "rename", id: preset.id, name: name.trim() });
-          await load();
-        } catch (e) {
-          alert(e.message);
-        }
-      },
-    },
-    [icon("pencil")]
-  );
-
+  const renameBtn = el("button", { class: "act ghost", title: "Rename" }, [icon("pencil")]);
   const del = el(
     "button",
     {
       class: "act ghost danger",
       title: "Delete",
-      onclick: async () => {
-        if (!window.confirm(`Delete \u201c${preset.name}\u201d?`)) return;
-        try {
-          await send({ type: "delete", id: preset.id });
-          await load();
-        } catch (e) {
-          alert(e.message);
-        }
+      onclick: (ev) => {
+        ev.stopPropagation();
+        enterConfirm();
       },
     },
     [icon("trash")]
   );
+  const actions = el("div", { class: "preset-actions" }, [open, renameBtn, del]);
+
+  // Inline delete confirm: the trash swaps the actions for a Delete/Cancel pair.
+  const confirmDel = el("button", {
+    class: "del-confirm-btn",
+    text: "Delete",
+    onclick: async (ev) => {
+      ev.stopPropagation();
+      try {
+        await send({ type: "delete", id: preset.id });
+        await load();
+      } catch (e) {
+        alert(e.message);
+      }
+    },
+  });
+  const cancelDel = el("button", {
+    class: "del-cancel-btn",
+    text: "Cancel",
+    onclick: (ev) => {
+      ev.stopPropagation();
+      exitConfirm();
+    },
+  });
+  const confirmGroup = el("div", { class: "del-confirm" }, [confirmDel, cancelDel]);
+  confirmGroup.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      exitConfirm();
+    }
+  });
+  function enterConfirm() {
+    open.style.display = "none";
+    renameBtn.style.display = "none";
+    del.style.display = "none";
+    actions.appendChild(confirmGroup);
+    confirmDel.focus();
+  }
+  function exitConfirm() {
+    if (confirmGroup.parentNode) actions.removeChild(confirmGroup);
+    open.style.display = "";
+    renameBtn.style.display = "";
+    del.style.display = "";
+  }
+
+  // Inline rename: the pencil toggles the name into an editable input
+  // (pencil -> tick). Tick / Enter saves; Esc cancels.
+  let input = null;
+  function setRenameIcon(name) {
+    renameBtn.textContent = "";
+    renameBtn.appendChild(icon(name));
+  }
+  function enterEdit() {
+    input = el("input", { type: "text", class: "name-edit", value: preset.name });
+    topline.replaceChild(input, nameEl);
+    setRenameIcon("check");
+    renameBtn.title = "Save name";
+    renameBtn.classList.add("editing");
+    open.style.display = "none";
+    del.style.display = "none";
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        commitEdit();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        exitEdit();
+      }
+    });
+    input.focus();
+    input.select();
+  }
+  function exitEdit() {
+    if (input) topline.replaceChild(nameEl, input);
+    input = null;
+    setRenameIcon("pencil");
+    renameBtn.title = "Rename";
+    renameBtn.classList.remove("editing");
+    open.style.display = "";
+    del.style.display = "";
+  }
+  async function commitEdit() {
+    const name = input.value.trim();
+    if (!name || name === preset.name) {
+      exitEdit();
+      return;
+    }
+    try {
+      await send({ type: "rename", id: preset.id, name });
+      await load();
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+  renameBtn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (input) commitEdit();
+    else enterEdit();
+  });
 
   return el("li", { class: "preset spine-" + color }, [
     el("div", { class: "preset-head" }, [
       tile,
       el("div", { class: "preset-body" }, [
-        el("div", { class: "preset-topline" }, [
-          el("div", { class: "preset-name", text: preset.name }),
-          stamp,
-        ]),
+        topline,
         el("div", { class: "preset-sub", text: sub }),
         preset.search ? el("div", { class: "preset-search" }, [icon("search"), el("span", { text: preset.search })]) : null,
       ]),
-      el("div", { class: "preset-actions" }, [open, rename, del]),
+      actions,
     ]),
     preset.filters.length ? filterChips(preset.filters) : null,
   ]);
@@ -202,15 +278,22 @@ function renderPanel() {
     .filter((p) => state.selected === "all" || p.siteId === state.selected)
     .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
 
-  panel.appendChild(
-    el("div", { class: "panel-head" }, [
-      el("h2", { text: labelFor(state.selected) }),
-      el("span", {
-        class: "panel-count",
-        text: `${items.length} preset${items.length === 1 ? "" : "s"}`,
-      }),
-    ])
-  );
+  const headEl = el("div", { class: "panel-head" }, [
+    el("h2", { text: labelFor(state.selected) }),
+    el("span", {
+      class: "panel-count",
+      text: `${items.length} preset${items.length === 1 ? "" : "s"}`,
+    }),
+  ]);
+  if (state.selected !== "all") {
+    const site = state.sites.find((s) => s.id === state.selected);
+    if (site) {
+      const logo = siteIcon(site);
+      logo.classList.add("panel-logo");
+      headEl.insertBefore(logo, headEl.firstChild);
+    }
+  }
+  panel.appendChild(headEl);
 
   if (!items.length) {
     panel.appendChild(
