@@ -115,8 +115,11 @@ export async function listPresets(store) {
 }
 
 export async function getPreset(id, store) {
-  const all = await readAll(area(store));
-  return all.find((p) => p.id === id) || null;
+  const s = area(store);
+  // Per-preset keys let us read exactly one item instead of loading and
+  // sanitizing the whole library just to find one (used by open/apply/rename/delete).
+  const res = await pget(s, PREFIX + id);
+  return sanitizePreset(res[PREFIX + id]);
 }
 
 // Accepts a partial preset; fills id/createdAt and validates required fields.
