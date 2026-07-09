@@ -242,8 +242,12 @@
   // this tab + search, so clearing filters mid-session isn't fought. We read
   // storage locally first and only wake the service worker when the global
   // master switch is on and at least one preset is still included.
-  (async function autoApply() {
+  let lastAutoUrl = null;
+  async function maybeAutoApply() {
     try {
+      const url = location.href;
+      if (url === lastAutoUrl) return; // no navigation since last check
+      lastAutoUrl = url;
       if (!(chrome && chrome.storage && chrome.storage.sync)) return;
       const all = await new Promise((res) => chrome.storage.sync.get(null, res));
       const settings = all.settings && typeof all.settings === "object" ? all.settings : {};
@@ -252,14 +256,26 @@
         (k) => k.startsWith("preset:") && all[k] && all[k].autoApply !== false
       );
       if (!hasEligible) return;
-      const res = await send({ type: "autoApplyTarget", url: location.href });
+      const res = await send({ type: "autoApplyTarget", url });
       if (!res || !res.url || !res.key || res.url === location.href) return;
       const guard = "fk_autoapply:" + res.key;
       if (sessionStorage.getItem(guard)) return;
       sessionStorage.setItem(guard, "1");
       location.replace(res.url);
     } catch {}
-  })();
+  }
+
+  // Run on first load, and again whenever the page URL changes. Most supported
+  // sites are single-page apps that navigate via the History API without a full
+  // reload, so the content script is never re-injected — polling location.href
+  // is the reliable way to notice those in-site searches (content scripts run in
+  // an isolated world, so patching history.pushState wouldn't see the site's own
+  // navigations). The lastAutoUrl check keeps the poll near-free until the URL
+  // actually changes.
+  maybeAutoApply();
+  window.addEventListener("popstate", () => setTimeout(maybeAutoApply, 60));
+  window.addEventListener("hashchange", () => setTimeout(maybeAutoApply, 60));
+  setInterval(maybeAutoApply, 700);
 
   // Remove filters: the popup's Remove button asks us to clear the current
   // page's filters (back to a bare search). We set the auto-apply guard first so
