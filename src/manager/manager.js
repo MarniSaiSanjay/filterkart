@@ -167,15 +167,22 @@ function toggleAddPopover(wrap, unused) {
     ...items,
   ]);
   wrap.appendChild(pop);
-  // Dismiss on any outside click (deferred so this same click doesn't close it).
+  // Dismiss on outside click or Esc (deferred so this same click doesn't close
+  // it). Mirrors the rename/delete editors which also honor Esc.
   setTimeout(() => {
+    const close = () => {
+      pop.remove();
+      document.removeEventListener("click", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
     const onDoc = (e) => {
-      if (!wrap.contains(e.target)) {
-        pop.remove();
-        document.removeEventListener("click", onDoc);
-      }
+      if (!wrap.contains(e.target)) close();
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") close();
     };
     document.addEventListener("click", onDoc);
+    document.addEventListener("keydown", onKey);
   }, 0);
 }
 
