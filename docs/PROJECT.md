@@ -144,7 +144,7 @@ popup UI ──msgs──► background worker ──► storage (chrome.storage
 
 ### MVP scope
 
-- Sites: Flipkart, Amazon, Myntra, Ajio.
+- Sites: Flipkart, Amazon, Myntra, Ajio, Nykaa, Meesho, Croma.
 - One-click apply from the popup.
 - Layered similarity (exact + typo-tolerant + offline word-vector meaning); fully offline; no backend, no API keys.
 - Manifest V3.

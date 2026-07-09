@@ -13,6 +13,16 @@ const CASES = {
   ajio:
     "https://www.ajio.com/search/?text=shoes&query=" +
     encodeURIComponent(":relevance:brand:Nike:brand:Puma"),
+  nykaa:
+    "https://www.nykaa.com/makeup/lips/c/15?sort=popularity&brand_filter=27256,8861&price_range_filter=500-999",
+  meesho:
+    "https://www.meesho.com/search?q=kurti" +
+    "&Gender[0][id]=443&Gender[0][label]=Women" +
+    "&Gender[0][payload]=eyJmaWVsZCI6ImxhYmVscy45Iiwib3AiOiJpbiIsInZhbHVlIjoiNDQzIn0%3D",
+  croma:
+    "https://www.croma.com/searchB?q=" +
+    encodeURIComponent("mobile:relevance:price_group:National_50,001 - 60,000") +
+    "&text=mobile",
 };
 
 let failed = 0;
@@ -24,7 +34,7 @@ for (const [site, url] of Object.entries(CASES)) {
     continue;
   }
   const first = adapter.parse(new URL(url));
-  const rebuilt = adapter.build(new URL(url), first.search, first.filters);
+  const rebuilt = adapter.build(new URL(url), first.search, first.filters, first.meta);
   const second = adapter.parse(new URL(rebuilt));
 
   const a = JSON.stringify([...first.filters].sort((x, y) => (x.facet + x.value).localeCompare(y.facet + y.value)));

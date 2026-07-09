@@ -259,6 +259,7 @@ test("autoApplyTarget only fires when the global master switch is on", async () 
   const on = await r.route({ type: "autoApplyTarget", url: AMAZON_BARE });
   assert(on.url && on.url.includes("p_123"), "applies the saved filters");
   assertEqual(on.key, "amazon|laptop");
+  assertEqual(on.name, "p"); // preset name, surfaced to the auto-apply toast
 });
 
 test("a per-preset opt-out excludes just that preset while global is on", async () => {
@@ -373,4 +374,22 @@ test("removeTarget returns null url for an unsupported site", async () => {
   const { route } = makeRouter({ url: "https://www.example.com/x" });
   const res = await route({ type: "removeTarget", url: "https://www.example.com/x" });
   assertEqual(res.url, null);
+});
+
+// Guards the class of bug where storage strips adapter-private filter data:
+// Meesho needs each value's id + payload to actually filter, and those survive a
+// save (createPreset) -> apply (getPreset -> build) cycle only via `meta`.
+const MEESHO_URL =
+  "https://www.meesho.com/search?q=kurti" +
+  "&Gender[0][id]=443&Gender[0][label]=Women" +
+  "&Gender[0][payload]=" +
+  encodeURIComponent("eyJmaWVsZCI6ImxhYmVscy45Iiwib3AiOiJpbiIsInZhbHVlIjoiNDQzIn0=");
+
+test("meesho id/payload survive a save + apply storage round-trip", async () => {
+  const r = makeRouter({ url: MEESHO_URL });
+  const { preset } = await r.route({ type: "save", name: "kurti" });
+  const res = await r.route({ type: "apply", id: preset.id });
+  assert(res.url.includes("443"), "apply URL must keep the filter id");
+  assert(res.url.includes("payload"), "apply URL must keep the filter payload");
+  assert(res.url.includes("label"), "apply URL keeps the human label too");
 });

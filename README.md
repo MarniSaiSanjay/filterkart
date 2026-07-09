@@ -54,7 +54,7 @@ npm run build     # syntax-check all JS + validate manifest.json
 npm test          # run the unit-test suite
 npm run verify    # build + test (run before every commit)
 npm run package   # build a clean Web-Store zip (dist/filterkart.zip)
-node scripts/e2e-check.js   # parse -> build -> parse round-trip on real URLs (all 4 sites)
+node scripts/e2e-check.js   # parse -> build -> parse round-trip on real URLs (all 7 sites)
 ```
 
 ### Layout

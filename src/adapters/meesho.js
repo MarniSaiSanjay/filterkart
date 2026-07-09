@@ -1,11 +1,17 @@
-// Meesho adapter. Each filter value is a param triple <Facet>[i][id|label|payload];
-// the payload is opaque, so all three parts are stored and replayed verbatim.
+// Meesho adapter. Each filter value is encoded as three params
+// <Facet>[i][id|label|payload]. The id and opaque payload are REQUIRED for the
+// filter to actually apply on Meesho, but they aren't part of the portable
+// {facet, value} shape that storage keeps — so they're stashed in adapter-private
+// `meta.encoded`, keyed by facet+value (which storage preserves). Without this,
+// a saved preset rebuilds a label-only URL that Meesho silently ignores.
 // Search term is the `q` param.
 import { toURL } from "./base.js";
 
 // Matches keys like `Gender[0][id]` / `Price[1][payload]`. Facet may contain
 // spaces (e.g. "Print Or Pattern Type"), so allow anything up to the first `[`.
 const KEY = /^([^[]+)\[(\d+)\]\[(id|label|payload)\]$/;
+
+const mk = (facet, value) => facet + "\u0000" + value;
 
 export default {
   id: "meesho",
@@ -33,36 +39,43 @@ export default {
       groups.get(gk)[part] = val;
     }
     const filters = [];
+    const encoded = {};
     const seen = new Set();
     for (const g of groups.values()) {
       if (!g.id && !g.payload) continue;
-      const key = g.facet + "\u0000" + (g.id || g.label);
+      const value = g.label || g.id;
+      const key = mk(g.facet, value);
       if (seen.has(key)) continue;
       seen.add(key);
-      filters.push({ facet: g.facet, value: g.label || g.id, id: g.id, payload: g.payload });
+      filters.push({ facet: g.facet, value });
+      encoded[key] = { id: g.id, payload: g.payload };
     }
-    return { search, filters };
+    const meta = filters.length ? { encoded } : undefined;
+    return { search, filters, meta };
   },
 
-  build(baseUrl, search, filters) {
+  build(baseUrl, search, filters, meta) {
     const u = toURL(baseUrl);
     u.pathname = "/search";
     const params = new URLSearchParams();
     if (search) params.set("q", search);
-    // Re-emit each facet's values with per-facet incrementing indices.
+    const encoded = (meta && meta.encoded) || {};
+    // Re-emit each facet's values with per-facet incrementing indices, restoring
+    // the id/payload for each value from meta so the URL actually filters.
     const counts = new Map();
     const seen = new Set();
     for (const f of filters || []) {
       if (!f || !f.facet) continue;
-      const dk = f.facet + "\u0000" + (f.id || f.value);
-      if (seen.has(dk)) continue;
-      seen.add(dk);
+      const key = mk(f.facet, f.value);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const enc = encoded[key] || {};
       const i = counts.get(f.facet) || 0;
       counts.set(f.facet, i + 1);
       const base = `${f.facet}[${i}]`;
-      if (f.id != null) params.set(`${base}[id]`, f.id);
+      if (enc.id) params.set(`${base}[id]`, enc.id);
       if (f.value != null) params.set(`${base}[label]`, f.value);
-      if (f.payload != null) params.set(`${base}[payload]`, f.payload);
+      if (enc.payload) params.set(`${base}[payload]`, enc.payload);
     }
     u.search = params.toString();
     return u.toString();

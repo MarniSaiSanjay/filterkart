@@ -197,22 +197,24 @@ test("nykaa.build restores the category path from meta and round-trips", () => {
 
 // ---- Meesho ----
 // Real URL captured live: each value is a <Facet>[i][id]/[label]/[payload] triple;
-// payload is base64({field,op,value}) and is stored + replayed verbatim.
-test("meesho.parse reassembles the id/label/payload triple per value", () => {
+// payload is base64({field,op,value}). id/payload are REQUIRED to filter, so they
+// live in adapter-private `meta.encoded` (keyed facet+value) which storage keeps.
+test("meesho.parse puts {facet,value} in filters and id/payload in meta", () => {
   const url =
     "https://www.meesho.com/search?q=kurti" +
     "&Gender[0][id]=443&Gender[0][label]=Women" +
     "&Gender[0][payload]=eyJmaWVsZCI6ImxhYmVscy45Iiwib3AiOiJpbiIsInZhbHVlIjoiNDQzIn0%3D";
-  const { search, filters } = meesho.parse(new URL(url));
+  const { search, filters, meta } = meesho.parse(new URL(url));
   assertEqual(search, "kurti");
-  assertEqual(filters, [
-    {
-      facet: "Gender",
-      value: "Women",
-      id: "443",
-      payload: "eyJmaWVsZCI6ImxhYmVscy45Iiwib3AiOiJpbiIsInZhbHVlIjoiNDQzIn0=",
+  assertEqual(filters, [{ facet: "Gender", value: "Women" }]);
+  assertEqual(meta, {
+    encoded: {
+      ["Gender\u0000Women"]: {
+        id: "443",
+        payload: "eyJmaWVsZCI6ImxhYmVscy45Iiwib3AiOiJpbiIsInZhbHVlIjoiNDQzIn0=",
+      },
     },
-  ]);
+  });
 });
 
 test("meesho.matches accepts /search results pages only", () => {
@@ -220,17 +222,26 @@ test("meesho.matches accepts /search results pages only", () => {
   assertEqual(meesho.matches(new URL("https://www.meesho.com/")), false);
 });
 
-test("meesho.build re-emits triples with per-facet indices and round-trips", () => {
+test("meesho.build restores id/payload from meta and round-trips", () => {
   const filters = [
-    { facet: "Gender", value: "Women", id: "443", payload: "eyJhIjoxfQ==" },
-    { facet: "Color", value: "Red", id: "12", payload: "eyJiIjoyfQ==" },
-    { facet: "Color", value: "Blue", id: "34", payload: "eyJjIjozfQ==" },
+    { facet: "Gender", value: "Women" },
+    { facet: "Color", value: "Red" },
+    { facet: "Color", value: "Blue" },
   ];
-  const built = meesho.build(new URL("https://www.meesho.com/search"), "kurti", filters);
+  const meta = {
+    encoded: {
+      ["Gender\u0000Women"]: { id: "443", payload: "eyJhIjoxfQ==" },
+      ["Color\u0000Red"]: { id: "12", payload: "eyJiIjoyfQ==" },
+      ["Color\u0000Blue"]: { id: "34", payload: "eyJjIjozfQ==" },
+    },
+  };
+  const built = meesho.build(new URL("https://www.meesho.com/search"), "kurti", filters, meta);
   assertEqual(built.includes("Color") && built.includes("%5B1%5D"), true);
-  const { search, filters: out } = meesho.parse(new URL(built));
+  assertEqual(built.includes("payload"), true);
+  const { search, filters: outFilters, meta: outMeta } = meesho.parse(new URL(built));
   assertEqual(search, "kurti");
-  assertEqual(out, filters);
+  assertEqual(outFilters, filters);
+  assertEqual(outMeta, meta);
 });
 
 // ---- Croma ----

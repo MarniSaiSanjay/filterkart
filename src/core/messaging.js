@@ -206,7 +206,7 @@ async function autoApplyTarget(deps, msg) {
     .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))[0];
 
   const url = adapter.build(pageUrl, search, top.filters, top.meta);
-  return { url, key: adapter.id + "|" + String(search).trim().toLowerCase() };
+  return { url, key: adapter.id + "|" + String(search).trim().toLowerCase(), name: top.name };
 }
 
 // Build the URL that clears all filters from the current page (keeps the

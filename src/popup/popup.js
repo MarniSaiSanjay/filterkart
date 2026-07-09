@@ -357,7 +357,7 @@ function render(data) {
             class: "status-desc",
             text: known
               ? `Run a search on ${known} to save or apply FilterKart presets.`
-              : "Open Flipkart, Amazon, Myntra or Ajio and run a search to use FilterKart.",
+              : "Open Flipkart, Amazon, Myntra, Ajio, Nykaa, Meesho or Croma and run a search to use FilterKart.",
           }),
         ]),
       ])

@@ -44,7 +44,3 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   );
   return true; // keep the message channel open for the async response
 });
-
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("FilterKart installed");
-});
