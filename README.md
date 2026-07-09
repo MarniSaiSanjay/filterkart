@@ -31,9 +31,12 @@ guide and [docs/PROJECT.md](docs/PROJECT.md) for the design.
 
 Presets are stored in `chrome.storage.sync`, so they roam with your Chrome profile.
 Applying to a *similar* search is handled by a pluggable similarity matcher
-(`src/core/matcher.js`); e.g. "running shoes" and "sports shoes" are treated as the same
-category. Typo tolerance uses the **Jaro-Winkler** string-similarity algorithm
-(implemented in-repo, no dependencies) so "mobilsss" still matches "mobile".
+(`src/similarity/matcher.js`); e.g. "running shoes" and "sports shoes" are treated as the same
+category. Matching is layered: exact canonical tokens, then **Jaro-Winkler** typo tolerance
+(implemented in-repo, no dependencies) so "mobilsss" still matches "mobile", then an
+**offline word-vector** layer (`src/similarity/vectors.js`, GloVe-50d, int8-quantized) so true
+synonyms that share no letters — "sofa"/"couch", "tv"/"television" — match without a
+hand-listed synonym table. All fully offline; no network calls or model downloads.
 
 ## Install (Load unpacked)
 
@@ -50,22 +53,42 @@ Plain JavaScript, no build step or runtime dependencies.
 npm run build     # syntax-check all JS + validate manifest.json
 npm test          # run the unit-test suite
 npm run verify    # build + test (run before every commit)
+npm run package   # build a clean Web-Store zip (dist/filterkart.zip)
 node scripts/e2e-check.js   # parse -> build -> parse round-trip on real URLs (all 4 sites)
 ```
 
 ### Layout
 
 ```
-manifest.json          MV3 manifest
-src/background.js       service worker: wires Chrome APIs to the message router
-src/core/messaging.js  dependency-injected router (context/list/save/apply/delete/rename)
-src/core/storage.js    preset CRUD over chrome.storage.sync
-src/core/registry.js   adapter registry + URL resolution
-src/core/matcher.js    search normalizer + similarity ranking
-src/adapters/*.js      per-site parse/build (flipkart, amazon, myntra, ajio, nykaa, meesho, croma)
-src/popup/*            toolbar popup UI
-src/content/content.js in-page floating button (style-isolated via shadow DOM)
-test/*                 zero-dependency test harness + suites
+manifest.json             MV3 manifest (declares what Chrome loads)
+
+src/                       everything the extension runs in the browser
+  background.js            service worker: wires Chrome APIs to the message router
+  core/                    app plumbing
+    messaging.js           dependency-injected router (context/list/save/apply/delete/rename)
+    storage.js             preset CRUD over chrome.storage.sync
+    registry.js            adapter registry + URL resolution
+  similarity/              search matching (self-contained: logic + its data)
+    matcher.js             search normalizer + layered similarity (exact/fuzzy/semantic) ranking
+    vectors.js             AUTO-GENERATED offline word vectors (GloVe-50d) for semantic matching
+  adapters/*.js            per-site parse/build (flipkart, amazon, myntra, ajio, nykaa, meesho, croma)
+  popup/*                  toolbar popup UI
+  manager/*                full-page preset manager UI
+  content/content.js       in-page floating button (style-isolated via shadow DOM)
+  ui/                      shared theme + bundled fonts
+
+icons/                     toolbar/store icons (png)
+
+scripts/                   dev tooling — NOT shipped in the extension
+  check.js                 "build": syntax-check all JS + validate manifest (npm run build)
+  e2e-check.js             parse -> build -> parse round-trip on real URLs (npm run e2e)
+  gen-icons.cjs            regenerate the icon PNGs (npm run icons)
+  build-vectors.mjs        regenerate src/similarity/vectors.js from GloVe (run manually)
+  package.mjs              build the clean Web-Store zip (npm run package)
+
+test/*                     zero-dependency test harness + suites
+docs/*                     design/status/plan notes
+dist/                      packaged zip output (git-ignored, created by npm run package)
 ```
 
 ## Verification

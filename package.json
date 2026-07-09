@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "build": "node scripts/check.js",
+    "package": "node scripts/package.mjs",
     "test": "node test/index.js",
     "verify": "npm run build && npm test",
     "e2e": "node scripts/e2e-check.js",

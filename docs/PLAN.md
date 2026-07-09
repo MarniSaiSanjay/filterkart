@@ -35,7 +35,10 @@ FilterKart/
     core/
       storage.js             # chrome.storage.sync CRUD for presets
       registry.js            # adapter registry + resolve-by-url
-      matcher.js             # SearchNormalizer + rule-based SimilarityProvider
+      messaging.js           # dependency-injected message router
+    similarity/
+      matcher.js             # SearchNormalizer + layered SimilarityProvider
+      vectors.js             # AUTO-GENERATED offline word vectors (GloVe-50d)
     adapters/
       base.js                # adapter shape/contract + shared helpers
       flipkart.js
@@ -62,8 +65,8 @@ FilterKart/
 - **WI-06 — Amazon adapter:** parse/build single `rh=` (facets comma-joined, values pipe-joined) (+ `k=`).
 - **WI-07 — Myntra adapter:** parse/build `f=<Facet>:<v1>,<v2>::…` + `rf=Price:…` (category in path).
 - **WI-08 — Ajio adapter:** parse/build `query=:relevance:<key>:<value>:…` (+ `text=`).
-- **WI-09 — Matcher (`core/matcher.js`):** `SearchNormalizer` (lowercase, strip
-  gender/plural/stopwords, synonym map) + rule-based `SimilarityProvider` (token overlap) behind
+- **WI-09 — Matcher (`similarity/matcher.js`):** `SearchNormalizer` (lowercase, strip
+  gender/plural/stopwords, synonym map) + layered `SimilarityProvider` (exact/fuzzy/semantic) behind
   a swappable interface.
 - **WI-10 — Background worker (`background.js`):** message handlers for save/list/apply/delete;
   read active tab URL; navigate tab to built URL.

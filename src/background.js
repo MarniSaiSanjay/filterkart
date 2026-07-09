@@ -2,7 +2,7 @@
 // Wires Chrome APIs to the dependency-injected message router.
 import * as storage from "./core/storage.js";
 import { ADAPTERS, resolveAdapter, getAdapterById, resolveSite } from "./core/registry.js";
-import { normalize, rankPresets } from "./core/matcher.js";
+import { normalize, rankPresets } from "./similarity/matcher.js";
 import { createRouter, SITE_ROOTS } from "./core/messaging.js";
 
 function siteHome(id) {

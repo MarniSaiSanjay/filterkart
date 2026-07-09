@@ -119,7 +119,7 @@ popup UI ──msgs──► background worker ──► storage (chrome.storage
 ```js
 {
   normalize(searchTerm) -> canonical,        // lowercase, strip gender/plural/stopwords, synonyms
-  similarity(a, b)      -> score 0..1,       // token overlap (rule-based) or model later
+  similarity(a, b)      -> score 0..1,        // layered: exact -> Jaro-Winkler typo -> word-vector meaning
 }
 ```
 
@@ -146,17 +146,52 @@ popup UI ──msgs──► background worker ──► storage (chrome.storage
 
 - Sites: Flipkart, Amazon, Myntra, Ajio.
 - One-click apply from the popup.
-- Rule-based similarity; fully offline; no backend, no API keys.
+- Layered similarity (exact + typo-tolerant + offline word-vector meaning); fully offline; no backend, no API keys.
 - Manifest V3.
 
-### Rule-based matcher — layers
+### How similarity is calculated (the matcher, end to end)
 
-- **Layer 1 (MVP):** `lowercase → strip gender/plural/stopwords → synonym map → token overlap`.
-  Free, offline, private; handles the "men shoes / footwear boy" family.
-- **Layer 2 (later):** swap in an embedding/LLM `SimilarityProvider` behind the same interface.
+Everything below produces **one final score from 0 to 1**. A preset is offered when that
+single score clears the threshold (`>= 0.6`). It is **not** a set of separate yes/no checks —
+exact matches, typos, and synonyms are just three ways to score a pair of words, and they all
+feed the same one number.
 
-> Nuance to revisit: "men" vs "boy/kids" are sometimes separate catalog sections on these sites;
-> the synonym map lets us tune how loose the matching is.
+**Step 1 — Normalize** each search term into canonical tokens:
+`lowercase → drop stopwords + marketing filler (best, new, cheap…) → drop gender/age words
+(men, boys, ladies…) → apply a small synonym safety-net → singularize`.
+e.g. `"Best Running Shoes for Men"` → `["shoe", "sport"]`.
+
+**Step 2 — Score every word-pair** with `tokenSimilarity(a, b)`. For a single pair it returns
+**one** number, taking the *first* layer that fires (they are tried in order, not added):
+
+| Order | Layer | What it catches | Example |
+| --- | --- | --- | --- |
+| 1 | **Exact** | identical canonical token | `shoe` = `shoe` → 1.0 |
+| 2 | **Near spelling (Jaro-Winkler)** | typos / minor misspellings | `mobilsss` ≈ `mobile` → 0.91 |
+| 3 | **Meaning (word-vector cosine)** | true synonyms sharing no letters | `sofa` ≈ `couch` → 0.70 |
+| — | none clears | unrelated words | `laptop` vs `sofa` → 0 |
+
+The word vectors are offline GloVe-50d, shipped in `src/similarity/vectors.js` (auto-generated). The
+meaning layer is why synonyms work **without a hand-listed synonym table**; the synonym map is
+now just a tiny safety-net for cases vectors miss (Indian terms, `laptop`~`notebook`).
+
+**Step 3 — Blend the pair-scores into the final number.** A soft **Dice + overlap
+(containment)** blend. Containment is what keeps a broad preset matching a refined search
+(`"samsung mobile"` still matches `"mobile"`); extra unmatched words pull the average down.
+
+**Step 3b — Accessory guard.** An "X accessory" is a different product from "X", so if one
+term carries an accessory word (`cover`, `case`, `bag`, `strap`, `charger`, `stand`…) the
+other lacks, the score is forced to 0 — `"mobile cover"` does **not** match `"mobile"`.
+
+**Step 4 — Threshold.** Final score `>= 0.6` → shown as **Matched**, else under **Others**.
+
+> Single word vs multi-word searches use the **same** logic — more words simply means more
+> word-pairs feeding the same Step-3 blend. Each pair still climbs the exact → spelling →
+> meaning ladder independently, so one search can mix all three (one exact, one typo, one
+> synonym) inside a single final score.
+
+**Swappable:** all of this lives behind `SimilarityProvider`; a stronger embedding/LLM
+provider can replace it via `setSimilarityProvider()` with no changes to callers.
 
 ---
 

@@ -3,7 +3,7 @@ import { mockStore } from "./mock-store.js";
 import { createRouter } from "../src/core/messaging.js";
 import * as storage from "../src/core/storage.js";
 import { resolveAdapter, resolveSite, getAdapterById } from "../src/core/registry.js";
-import { normalize, rankPresets } from "../src/core/matcher.js";
+import { normalize, rankPresets } from "../src/similarity/matcher.js";
 
 setFile("messaging");
 

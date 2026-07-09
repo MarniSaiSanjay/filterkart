@@ -99,7 +99,9 @@ body {
 .add-pop-item {
   display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 11px;
   text-decoration: none; color: var(--ink); font-family: var(--display); font-size: 13.5px; font-weight: 700;
+  transition: background 0.15s ease;
 }
+.add-pop-item:hover { background: rgba(255, 255, 255, 0.5); }
 .add-pop-item .add-mini { box-shadow: none; }
 
 /* --- Content ------------------------------------------------------------- */
