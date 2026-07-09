@@ -80,6 +80,15 @@ test("save caps the preset name at 50 characters", async () => {
   assertEqual(renamed.name.length, 50);
 });
 
+test("save caps by code points without splitting an emoji surrogate pair", async () => {
+  const { route } = makeRouter({ url: AMAZON_URL });
+  const emojiName = "\u{1F600}".repeat(80); // 80 emoji (each 2 UTF-16 units)
+  const { preset } = await route({ type: "save", name: emojiName });
+  assertEqual(Array.from(preset.name).length, 50);
+  assert(!preset.name.includes("\uFFFD"), "must not contain a broken replacement char");
+  assert(!/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(preset.name), "no dangling high surrogate");
+});
+
 test("save fails when no filters are applied", async () => {
   const { route } = makeRouter({ url: "https://www.amazon.in/s?k=laptop" });
   let threw = false;

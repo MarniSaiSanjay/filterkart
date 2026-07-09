@@ -4,6 +4,12 @@
 
 const NAME_MAX = 50; // preset name cap, mirrored by the UI inputs' maxlength
 
+// Cap a name to NAME_MAX by code points, not UTF-16 units, so we never slice a
+// surrogate pair (emoji) in half and store a broken "\uFFFD" character.
+function capName(name) {
+  return Array.from(name || "").slice(0, NAME_MAX).join("");
+}
+
 // Order-independent signature of a filter set, for duplicate detection.
 function filterSig(filters) {
   return (filters || [])
@@ -72,7 +78,7 @@ async function save(deps, msg) {
   );
   if (dup) throw new Error(`You've already saved these filters as \u201C${dup.name}\u201D.`);
   const preset = await deps.createPreset({
-    name: (msg.name || search || adapter.label).slice(0, NAME_MAX),
+    name: capName(msg.name || search || adapter.label),
     siteId: adapter.id,
     canonicalCategory: deps.normalize(search),
     search,
@@ -146,7 +152,7 @@ export function createRouter(deps) {
       case "delete":
         return { ok: await deps.deletePreset(msg.id) };
       case "rename":
-        return { preset: await deps.updatePreset(msg.id, { name: (msg.name || "").slice(0, NAME_MAX) }) };
+        return { preset: await deps.updatePreset(msg.id, { name: capName(msg.name) }) };
       default:
         throw new Error("unknown message type: " + (msg && msg.type));
     }
