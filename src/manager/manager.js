@@ -10,6 +10,7 @@ const state = {
   presets: [],
   sites: [], // [{ id, label }]
   selected: "all",
+  page: 1,
 };
 
 function countFor(siteId) {
@@ -66,6 +67,7 @@ function navItem(site) {
       class: "nav-item" + (state.selected === site.id ? " active" : ""),
       onclick: () => {
         state.selected = site.id;
+        state.page = 1;
         renderNav();
         renderPanel();
       },
@@ -388,6 +390,42 @@ function supportedSitesHint() {
   ]);
 }
 
+// Windowed page numbers: 1..N when small, else 1 … cur-1 cur cur+1 … N.
+function pageList(total, cur) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const out = [1];
+  const start = Math.max(2, cur - 1);
+  const end = Math.min(total - 1, cur + 1);
+  if (start > 2) out.push("gap");
+  for (let i = start; i <= end; i++) out.push(i);
+  if (end < total - 1) out.push("gap");
+  out.push(total);
+  return out;
+}
+
+// Numbered pagination bar: ‹ 1 … 4 5 6 … 20 ›
+function pager(total, cur, go) {
+  const arrow = (name, to, disabled, label) => {
+    if (disabled) return null; // show prev/next only when there's somewhere to go
+    const b = el("button", { class: "pager-btn pager-arrow", title: label }, [icon(name)]);
+    b.addEventListener("click", () => go(to));
+    return b;
+  };
+  const kids = [arrow("chevron-left", cur - 1, cur <= 1, "Previous")];
+  for (const p of pageList(total, cur)) {
+    if (p === "gap") {
+      kids.push(el("span", { class: "pager-gap", text: "\u2026" }));
+      continue;
+    }
+    const b = el("button", { class: "pager-btn" + (p === cur ? " active" : ""), text: String(p) });
+    if (p === cur) b.setAttribute("aria-current", "page");
+    else b.addEventListener("click", () => go(p));
+    kids.push(b);
+  }
+  kids.push(arrow("chevron", cur + 1, cur >= total, "Next"));
+  return el("nav", { class: "pager", "aria-label": "Pagination" }, kids);
+}
+
 function renderPanel() {
   panel.textContent = "";
   const items = state.presets
@@ -429,7 +467,22 @@ function renderPanel() {
     return;
   }
 
-  panel.appendChild(el("ul", { class: "preset-list" }, items.map(presetCard)));
+  const PER_PAGE = 10;
+  const totalPages = Math.ceil(items.length / PER_PAGE);
+  state.page = Math.min(Math.max(1, state.page), totalPages);
+  const start = (state.page - 1) * PER_PAGE;
+  const pageItems = items.slice(start, start + PER_PAGE);
+
+  panel.appendChild(el("ul", { class: "preset-list" }, pageItems.map(presetCard)));
+  if (totalPages > 1) {
+    panel.appendChild(
+      pager(totalPages, state.page, (p) => {
+        state.page = p;
+        renderPanel();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      })
+    );
+  }
 }
 
 // --- load ------------------------------------------------------------------

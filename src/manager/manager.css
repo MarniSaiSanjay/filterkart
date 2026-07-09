@@ -232,6 +232,21 @@ body {
 }
 .chip.more { background: transparent; border: none; color: var(--muted); font-family: var(--mono); font-weight: 500; max-width: none; }
 
+/* Numbered pagination (10 presets per page) */
+.pager { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 24px 0 4px; }
+.pager-btn {
+  min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px;
+  border: 1px solid var(--glass-brd-soft); background: rgba(255, 255, 255, 0.55);
+  font-family: var(--display); font-size: 13.5px; font-weight: 700; color: var(--ink-2);
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.pager-btn:hover:not(:disabled):not(.active) { background: rgba(255, 255, 255, 0.9); color: var(--ink); }
+.pager-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); cursor: default; }
+.pager-arrow { padding: 0; }
+.pager-arrow svg { width: 16px; height: 16px; }
+.pager-gap { color: var(--muted); padding: 0 2px; font-weight: 700; align-self: flex-end; }
+
 /* Empty state */
 .empty { text-align: center; padding: 64px 20px; }
 .empty-ico {

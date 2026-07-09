@@ -39,6 +39,7 @@ export const ICONS = {
   check: '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   chevron: '<path d="M9 6l6 6-6 6"/>',
+  "chevron-left": '<path d="M15 6l-6 6 6 6"/>',
   store: '<path d="M4 9l1.5-4h13L20 9"/><path d="M4 9v10h16V9"/><path d="M4 9h16"/><path d="M9 19v-5h6v5"/>',
   bulb: '<path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 1 4 10.5c-.7.7-1 1.3-1 2.5H9c0-1.2-.3-1.8-1-2.5A6 6 0 0 1 12 3z"/>',
   pencil: '<path d="M4 20h4L20 8l-4-4L4 16z"/>',
