@@ -1,8 +1,10 @@
-// FilterKart preset storage — CRUD over chrome.storage.sync. A preset is
+// FilterKart preset storage — one item per preset in chrome.storage.sync, keyed
+// "preset:<id>", so each preset gets its own ~8 KB budget instead of sharing a
+// single array (which capped the whole library at ~8 KB). A preset is
 // { id, name, siteId, canonicalCategory, search, filters:[{facet,value}], meta,
-// createdAt, updatedAt }. See docs/PROJECT.md for the schema rationale.
+// createdAt, updatedAt }.
 
-const KEY = "presets";
+const PREFIX = "preset:";
 
 // Resolve a storage area. Falls back to an injected mock for tests/node.
 function area(override) {
@@ -13,7 +15,63 @@ function area(override) {
   throw new Error("no chrome.storage.sync available");
 }
 
+function lastError() {
+  return typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError;
+}
+
+// Promise wrappers over the callback-style storage API.
+function pget(store, keys) {
+  return new Promise((resolve, reject) => {
+    try {
+      store.get(keys, (res) => {
+        const err = lastError();
+        if (err) return reject(new Error(err.message));
+        resolve(res || {});
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+function pset(store, obj) {
+  return new Promise((resolve, reject) => {
+    try {
+      store.set(obj, () => {
+        const err = lastError();
+        if (err) return reject(new Error(err.message));
+        resolve();
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+function premove(store, keys) {
+  return new Promise((resolve, reject) => {
+    try {
+      store.remove(keys, () => {
+        const err = lastError();
+        if (err) return reject(new Error(err.message));
+        resolve();
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
 const str = (v) => (typeof v === "string" ? v : "");
+
+// Map low-level storage quota/limit errors to a message a user can act on.
+function friendlyWriteError(e) {
+  const msg = (e && e.message) || "";
+  if (/quota|max_items|too many|bytes/i.test(msg)) {
+    return new Error("Storage is full — delete a few presets and try again.");
+  }
+  return e instanceof Error ? e : new Error(msg || "could not save preset");
+}
 
 // Coerce a stored entry into the canonical preset shape. Returns null for
 // entries that can't be salvaged (not an object, or missing id/siteId), so a
@@ -39,34 +97,13 @@ function sanitizePreset(p) {
   };
 }
 
-function getAll(store) {
-  return new Promise((resolve, reject) => {
-    try {
-      store.get(KEY, (res) => {
-        const err = typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError;
-        if (err) return reject(new Error(err.message));
-        const raw = (res && res[KEY]) || [];
-        const list = Array.isArray(raw) ? raw : [];
-        resolve(list.map(sanitizePreset).filter(Boolean));
-      });
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
-
-function setAll(store, presets) {
-  return new Promise((resolve, reject) => {
-    try {
-      store.set({ [KEY]: presets }, () => {
-        const err = typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError;
-        if (err) return reject(new Error(err.message));
-        resolve();
-      });
-    } catch (e) {
-      reject(e);
-    }
-  });
+// Read every preset item.
+async function readAll(store) {
+  const all = await pget(store, null);
+  return Object.keys(all)
+    .filter((k) => k.startsWith(PREFIX))
+    .map((k) => sanitizePreset(all[k]))
+    .filter(Boolean);
 }
 
 export function generateId() {
@@ -74,11 +111,11 @@ export function generateId() {
 }
 
 export async function listPresets(store) {
-  return getAll(area(store));
+  return readAll(area(store));
 }
 
 export async function getPreset(id, store) {
-  const all = await getAll(area(store));
+  const all = await readAll(area(store));
   return all.find((p) => p.id === id) || null;
 }
 
@@ -98,27 +135,27 @@ export async function createPreset(preset, store) {
     createdAt: preset.createdAt || Date.now(),
     updatedAt: preset.updatedAt || preset.createdAt || Date.now(),
   };
-  const all = await getAll(s);
-  all.push(record);
-  await setAll(s, all);
+  await pset(s, { [PREFIX + record.id]: record }).catch((e) => {
+    throw friendlyWriteError(e);
+  });
   return record;
 }
 
 // Merges patch into an existing preset by id. Returns updated preset or null.
 export async function updatePreset(id, patch, store) {
   const s = area(store);
-  const all = await getAll(s);
-  const idx = all.findIndex((p) => p.id === id);
-  if (idx === -1) return null;
-  all[idx] = { ...all[idx], ...patch, id: all[idx].id, updatedAt: Date.now() };
-  await setAll(s, all);
-  return all[idx];
+  const existing = await getPreset(id, s);
+  if (!existing) return null;
+  const updated = { ...existing, ...patch, id: existing.id, updatedAt: Date.now() };
+  await pset(s, { [PREFIX + id]: updated }).catch((e) => {
+    throw friendlyWriteError(e);
+  });
+  return updated;
 }
 
 export async function deletePreset(id, store) {
   const s = area(store);
-  const all = await getAll(s);
-  const next = all.filter((p) => p.id !== id);
-  await setAll(s, next);
-  return next.length !== all.length;
+  const existed = !!(await getPreset(id, s));
+  await premove(s, PREFIX + id);
+  return existed;
 }

@@ -17,5 +17,10 @@ export function mockStore(initial = {}) {
       data = { ...data, ...obj };
       cb();
     },
+    remove(key, cb) {
+      const keys = typeof key === "string" ? [key] : key;
+      for (const k of keys) delete data[k];
+      cb && cb();
+    },
   };
 }

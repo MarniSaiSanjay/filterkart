@@ -161,7 +161,7 @@ function tokenSimilarity(a, b) {
 // Containment-aware similarity over token arrays. Pairs each A-token with its
 // best unused B-token, then blends Dice (symmetric) with overlap (containment,
 // so a broad preset "mobile" still fully matches "samsung mobile").
-export function softSimilarity(aTokens, bTokens) {
+function softSimilarity(aTokens, bTokens) {
   const A = [...new Set(aTokens)];
   const B = [...new Set(bTokens)];
   if (A.length === 0 && B.length === 0) return 1;

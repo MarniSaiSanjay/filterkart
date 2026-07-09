@@ -75,18 +75,16 @@ test("deletePreset removes and reports", async () => {
 
 test("listPresets sanitizes tampered entries", async () => {
   const s = mockStore({
-    presets: [
-      { id: "p1", siteId: "amazon", name: "Good", filters: [{ facet: "brand", value: "HP" }] },
-      { id: "p2", siteId: "myntra", name: "BadFilters", filters: "not-an-array" },
-      { id: "p3", siteId: "ajio", filters: [{ facet: "x", value: "y" }, "junk", null] },
-      { siteId: "flipkart", name: "NoId" },
-      "totally-not-an-object",
-      null,
-    ],
+    "preset:p1": { id: "p1", siteId: "amazon", name: "Good", filters: [{ facet: "brand", value: "HP" }] },
+    "preset:p2": { id: "p2", siteId: "myntra", name: "BadFilters", filters: "not-an-array" },
+    "preset:p3": { id: "p3", siteId: "ajio", filters: [{ facet: "x", value: "y" }, "junk", null] },
+    "preset:p4": { siteId: "flipkart", name: "NoId" },
+    "preset:p5": "totally-not-an-object",
+    "preset:p6": null,
   });
   const all = await listPresets(s);
   assertEqual(all.length, 3);
-  assertEqual(all.map((p) => p.id).join(","), "p1,p2,p3");
+  assertEqual(all.map((p) => p.id).sort().join(","), "p1,p2,p3");
   const bad = all.find((p) => p.id === "p2");
   assert(Array.isArray(bad.filters), "filters coerced to array");
   assertEqual(bad.filters.length, 0);
@@ -95,8 +93,42 @@ test("listPresets sanitizes tampered entries", async () => {
   assertEqual(p3.filters.length, 1);
 });
 
-test("listPresets tolerates non-array storage value", async () => {
-  const s = mockStore({ presets: { not: "a list" } });
+test("listPresets ignores non-preset keys", async () => {
+  const s = mockStore({ other: { not: "a preset" }, "preset:x": "junk" });
   const all = await listPresets(s);
   assertEqual(all.length, 0);
+});
+
+function rawGet(store) {
+  return new Promise((resolve) => store.get(null, resolve));
+}
+
+test("createPreset surfaces a friendly message when storage is full", async () => {
+  const failing = {
+    get: (k, cb) => cb({}),
+    set: () => {
+      throw new Error("QUOTA_BYTES_PER_ITEM quota exceeded");
+    },
+    remove: (k, cb) => cb(),
+  };
+  let msg = "";
+  try {
+    await createPreset({ name: "X", siteId: "amazon" }, failing);
+  } catch (e) {
+    msg = e.message;
+  }
+  assert(/storage is full/i.test(msg), "quota error is humanized: " + msg);
+});
+
+test("each preset is stored under its own key", async () => {
+  const s = mockStore();
+  const a = await createPreset({ name: "A", siteId: "amazon" }, s);
+  const b = await createPreset({ name: "B", siteId: "myntra" }, s);
+  const raw = await rawGet(s);
+  assert(("preset:" + a.id) in raw, "a has own key");
+  assert(("preset:" + b.id) in raw, "b has own key");
+  await deletePreset(a.id, s);
+  const raw2 = await rawGet(s);
+  assert(!(("preset:" + a.id) in raw2), "a key removed on delete");
+  assert(("preset:" + b.id) in raw2, "b key untouched");
 });
