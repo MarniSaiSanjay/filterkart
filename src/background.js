@@ -20,6 +20,8 @@ const deps = {
   deletePreset: (id) => storage.deletePreset(id),
   updatePreset: (id, patch) => storage.updatePreset(id, patch),
   getPreset: (id) => storage.getPreset(id),
+  getSettings: () => storage.getSettings(),
+  setSettings: (patch) => storage.setSettings(patch),
   resolveAdapter,
   resolveSite,
   getAdapterById,

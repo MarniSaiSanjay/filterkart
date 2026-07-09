@@ -19,6 +19,8 @@ function makeRouter({ url } = {}) {
     deletePreset: (id) => storage.deletePreset(id, store),
     updatePreset: (id, patch) => storage.updatePreset(id, patch, store),
     getPreset: (id) => storage.getPreset(id, store),
+    getSettings: () => storage.getSettings(store),
+    setSettings: (patch) => storage.setSettings(patch, store),
     resolveAdapter,
     resolveSite,
     getAdapterById,
@@ -205,54 +207,89 @@ const AMAZON_BARE = "https://www.amazon.in/s?k=laptop";
 const AMAZON_URL2 =
   "https://www.amazon.in/s?k=laptop&rh=" + encodeURIComponent("p_89:Dell");
 
-test("setAutoApply flips the flag and persists", async () => {
+test("presets are auto-apply-included by default; setAutoApply can exclude one", async () => {
   const { route } = makeRouter({ url: AMAZON_URL });
   const { preset } = await route({ type: "save", name: "p" });
-  assertEqual(preset.autoApply, false);
-  const res = await route({ type: "setAutoApply", id: preset.id, value: true });
-  assertEqual(res.preset.autoApply, true);
+  assertEqual(preset.autoApply, true); // opt-out model: included by default
+  const res = await route({ type: "setAutoApply", id: preset.id, value: false });
+  assertEqual(res.preset.autoApply, false);
   const all = await route({ type: "all" });
-  assertEqual(all.presets[0].autoApply, true);
+  assertEqual(all.presets[0].autoApply, false);
 });
 
-test("autoApplyTarget redirects a bare search to a matching auto-apply preset", async () => {
+test("setAllAutoApply bulk-flips every preset's flag", async () => {
+  const r = makeRouter({ url: AMAZON_URL });
+  const a = await r.route({ type: "save", name: "a" });
+  r.tab.url = AMAZON_URL2;
+  await r.route({ type: "save", name: "b" });
+  // Opt one out, then disable all.
+  await r.route({ type: "setAutoApply", id: a.preset.id, value: false });
+
+  const off = await r.route({ type: "setAllAutoApply", value: false });
+  assertEqual(off.changed, 1); // only the still-included one changed
+  let all = await r.route({ type: "all" });
+  assert(all.presets.every((p) => p.autoApply === false), "all excluded");
+
+  const on = await r.route({ type: "setAllAutoApply", value: true });
+  assertEqual(on.changed, 2);
+  all = await r.route({ type: "all" });
+  assert(all.presets.every((p) => p.autoApply === true), "all included");
+});
+
+test("setGlobalAutoApply persists the master switch", async () => {
+  const { route } = makeRouter({ url: AMAZON_URL });
+  const off = await route({ type: "getSettings" });
+  assert(!off.settings.autoApply, "defaults off");
+  const on = await route({ type: "setGlobalAutoApply", value: true });
+  assertEqual(on.settings.autoApply, true);
+  const again = await route({ type: "getSettings" });
+  assertEqual(again.settings.autoApply, true);
+});
+
+test("autoApplyTarget only fires when the global master switch is on", async () => {
+  const r = makeRouter({ url: AMAZON_URL });
+  await r.route({ type: "save", name: "p" }); // included by default
+
+  // Global off -> nothing, even though the preset is included.
+  const off = await r.route({ type: "autoApplyTarget", url: AMAZON_BARE });
+  assertEqual(off.url, null);
+
+  // Global on -> fires.
+  await r.route({ type: "setGlobalAutoApply", value: true });
+  const on = await r.route({ type: "autoApplyTarget", url: AMAZON_BARE });
+  assert(on.url && on.url.includes("p_123"), "applies the saved filters");
+  assertEqual(on.key, "amazon|laptop");
+});
+
+test("a per-preset opt-out excludes just that preset while global is on", async () => {
   const r = makeRouter({ url: AMAZON_URL });
   const { preset } = await r.route({ type: "save", name: "p" });
-  await r.route({ type: "setAutoApply", id: preset.id, value: true });
+  await r.route({ type: "setGlobalAutoApply", value: true });
+  await r.route({ type: "setAutoApply", id: preset.id, value: false });
 
   const res = await r.route({ type: "autoApplyTarget", url: AMAZON_BARE });
-  assert(res.url, "should return a redirect URL");
-  assert(res.url.includes("p_123"), "applies the saved filters");
-  assertEqual(res.key, "amazon|laptop");
+  assertEqual(res.url, null);
 });
 
 test("autoApplyTarget skips a page that already has filters (loop guard)", async () => {
   const r = makeRouter({ url: AMAZON_URL });
-  const { preset } = await r.route({ type: "save", name: "p" });
-  await r.route({ type: "setAutoApply", id: preset.id, value: true });
+  await r.route({ type: "save", name: "p" });
+  await r.route({ type: "setGlobalAutoApply", value: true });
 
   const res = await r.route({ type: "autoApplyTarget", url: AMAZON_URL });
-  assertEqual(res.url, null);
-});
-
-test("autoApplyTarget returns null when no preset has auto-apply on", async () => {
-  const r = makeRouter({ url: AMAZON_URL });
-  await r.route({ type: "save", name: "p" }); // left off
-  const res = await r.route({ type: "autoApplyTarget", url: AMAZON_BARE });
   assertEqual(res.url, null);
 });
 
 test("autoApplyTarget breaks a tie by most recently updated preset", async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const r = makeRouter({ url: AMAZON_URL });
-  const first = await r.route({ type: "save", name: "first" });
-  await r.route({ type: "setAutoApply", id: first.preset.id, value: true });
+  await r.route({ type: "setGlobalAutoApply", value: true });
+  await r.route({ type: "save", name: "first" }); // included by default
 
   await sleep(5); // ensure a later updatedAt on the second preset
-  // A second auto-apply preset for the same search but different filters.
+  // A second included preset for the same search but different filters.
   r.tab.url = AMAZON_URL2;
-  const second = await r.route({ type: "save", name: "second" });
-  await r.route({ type: "setAutoApply", id: second.preset.id, value: true });
+  await r.route({ type: "save", name: "second" });
 
   const res = await r.route({ type: "autoApplyTarget", url: AMAZON_BARE });
   assert(res.url.includes("Dell"), "most recent preset's filters win the tie");
@@ -286,17 +323,23 @@ test("importPresets adds valid presets and skips duplicates + junk", async () =>
   assertEqual(all.presets.length, 2);
 });
 
-test("importPresets preserves autoApply and mints fresh ids", async () => {
+test("importPresets keeps an autoApply:false exception and mints fresh ids", async () => {
   const r = makeRouter({ url: AMAZON_URL });
   const res = await r.route({
     type: "importPresets",
     presets: [
-      { id: "should-be-ignored", name: "p", siteId: "amazon", search: "laptop", autoApply: true,
+      // explicit opt-out is preserved
+      { id: "should-be-ignored", name: "p", siteId: "amazon", search: "laptop", autoApply: false,
         filters: [{ facet: "p_89", value: "Dell" }] },
+      // no autoApply field -> included by default (opt-out model)
+      { name: "q", siteId: "amazon", search: "shoes", filters: [{ facet: "p_89", value: "Nike" }] },
     ],
   });
-  assertEqual(res.added, 1);
+  assertEqual(res.added, 2);
   const all = await r.route({ type: "all" });
-  assertEqual(all.presets[0].autoApply, true);
-  assert(all.presets[0].id !== "should-be-ignored", "assigns a fresh id");
+  const p = all.presets.find((x) => x.search === "laptop");
+  const q = all.presets.find((x) => x.search === "shoes");
+  assertEqual(p.autoApply, false);
+  assertEqual(q.autoApply, true);
+  assert(p.id !== "should-be-ignored", "assigns a fresh id");
 });

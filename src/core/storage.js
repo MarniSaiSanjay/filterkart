@@ -92,7 +92,7 @@ function sanitizePreset(p) {
     search: str(p.search),
     filters,
     meta: p.meta && typeof p.meta === "object" ? p.meta : null,
-    autoApply: p.autoApply === true,
+    autoApply: p.autoApply !== false,
     createdAt: typeof p.createdAt === "number" ? p.createdAt : Date.now(),
     updatedAt: typeof p.updatedAt === "number" ? p.updatedAt : Date.now(),
   };
@@ -113,6 +113,26 @@ export function generateId() {
 
 export async function listPresets(store) {
   return readAll(area(store));
+}
+
+// --- global settings -------------------------------------------------------
+// Stored under a single non-preset key so readAll (which only reads "preset:"
+// items) and the preset-key change listeners ignore it.
+const SETTINGS_KEY = "settings";
+
+export async function getSettings(store) {
+  const res = await pget(area(store), SETTINGS_KEY);
+  const v = res[SETTINGS_KEY];
+  return v && typeof v === "object" ? v : {};
+}
+
+export async function setSettings(patch, store) {
+  const s = area(store);
+  const next = { ...(await getSettings(s)), ...patch };
+  await pset(s, { [SETTINGS_KEY]: next }).catch((e) => {
+    throw friendlyWriteError(e);
+  });
+  return next;
 }
 
 export async function getPreset(id, store) {
@@ -136,7 +156,7 @@ export async function createPreset(preset, store) {
     search: preset.search || "",
     filters: Array.isArray(preset.filters) ? preset.filters : [],
     meta: preset.meta || null,
-    autoApply: preset.autoApply === true,
+    autoApply: preset.autoApply !== false,
     createdAt: preset.createdAt || Date.now(),
     updatedAt: preset.updatedAt || preset.createdAt || Date.now(),
   };

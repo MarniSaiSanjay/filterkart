@@ -130,12 +130,36 @@ async function buildUrl(deps, msg) {
   return { url };
 }
 
-// Flip a preset's auto-apply flag. updatePreset bumps updatedAt, so the most
-// recently toggled preset also wins the "most recent" tie-break below.
+// Flip a preset's auto-apply flag (an opt-out exception when the global master
+// switch is on). updatePreset bumps updatedAt, so the most recently toggled
+// preset also wins the "most recent" tie-break below.
 async function setAutoApply(deps, msg) {
   const preset = await deps.updatePreset(msg.id, { autoApply: !!msg.value });
   if (!preset) throw new Error("preset not found");
   return { preset };
+}
+
+// Bulk opt-in/opt-out: set every preset's auto-apply flag at once. Used by the
+// popup's "Enable all / Disable all" links (only meaningful while the global
+// master switch is on). Skips presets already at the target value.
+async function setAllAutoApply(deps, msg) {
+  const value = !!msg.value;
+  const presets = await deps.listPresets();
+  let changed = 0;
+  for (const p of presets) {
+    if ((p.autoApply !== false) === value) continue;
+    await deps.updatePreset(p.id, { autoApply: value });
+    changed++;
+  }
+  return { changed };
+}
+
+// Read/write the global master switch that gates auto-apply for every preset.
+async function getSettings(deps) {
+  return { settings: await deps.getSettings() };
+}
+async function setGlobalAutoApply(deps, msg) {
+  return { settings: await deps.setSettings({ autoApply: !!msg.value }) };
 }
 
 // Given a page URL, return the filtered URL to auto-redirect to (or {url:null}).
@@ -144,6 +168,8 @@ async function setAutoApply(deps, msg) {
 // since the redirected page then has filters and no longer qualifies.
 async function autoApplyTarget(deps, msg) {
   if (!msg || !msg.url) return { url: null };
+  const settings = await deps.getSettings();
+  if (!settings.autoApply) return { url: null }; // global master switch is off
   let pageUrl;
   try {
     pageUrl = new URL(msg.url);
@@ -206,7 +232,7 @@ function sanitizeImport(raw, deps) {
     search,
     filters,
     meta: raw.meta && typeof raw.meta === "object" ? raw.meta : null,
-    autoApply: raw.autoApply === true,
+    autoApply: raw.autoApply !== false,
     createdAt: typeof raw.createdAt === "number" ? raw.createdAt : Date.now(),
     updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : Date.now(),
   };
@@ -254,6 +280,12 @@ export function createRouter(deps) {
         return buildUrl(deps, msg);
       case "setAutoApply":
         return setAutoApply(deps, msg);
+      case "setAllAutoApply":
+        return setAllAutoApply(deps, msg);
+      case "getSettings":
+        return getSettings(deps);
+      case "setGlobalAutoApply":
+        return setGlobalAutoApply(deps, msg);
       case "autoApplyTarget":
         return autoApplyTarget(deps, msg);
       case "all":

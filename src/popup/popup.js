@@ -7,7 +7,7 @@
 import { send, el, icon, gaugeIcon, pickIcon, pickColor, timeAgo } from "../ui/ui.js";
 
 const app = document.getElementById("app");
-const state = { favIconUrl: null };
+const state = { favIconUrl: null, globalAuto: false };
 
 // --- error / helpers -------------------------------------------------------
 
@@ -123,30 +123,10 @@ function presetCard(preset, score) {
   const applySlot = el("span", { class: "apply-slot" });
   function paintApply() {
     applySlot.textContent = "";
-    applySlot.appendChild(preset.autoApply ? appliedBadge : apply);
+    const auto = state.globalAuto && preset.autoApply !== false;
+    applySlot.appendChild(auto ? appliedBadge : apply);
   }
   paintApply();
-
-  const autoToggle = el("input", { type: "checkbox", class: "auto-toggle" });
-  autoToggle.checked = !!preset.autoApply;
-  autoToggle.addEventListener("change", async () => {
-    const val = autoToggle.checked;
-    try {
-      await send({ type: "setAutoApply", id: preset.id, value: val });
-      preset.autoApply = val;
-      preset.updatedAt = Date.now();
-      paintApply();
-    } catch (e) {
-      autoToggle.checked = !val;
-      showError(e.message);
-    }
-  });
-  const autoRow = el("label", { class: "auto-row", title: "Redirect to these filters when you search this on the site" }, [
-    autoToggle,
-    el("span", { class: "auto-switch" }),
-    el("span", { class: "auto-label", text: "Auto-apply on this search" }),
-  ]);
-  bodyChildren.push(autoRow);
 
   const del = el(
     "button",
@@ -436,7 +416,11 @@ async function load() {
     state.favIconUrl = null;
   }
   try {
-    const data = await send({ type: "list" });
+    const [data, settings] = await Promise.all([
+      send({ type: "list" }),
+      send({ type: "getSettings" }).catch(() => ({ settings: {} })),
+    ]);
+    state.globalAuto = !!(settings && settings.settings && settings.settings.autoApply);
     render(data);
   } catch (e) {
     showError(e.message);

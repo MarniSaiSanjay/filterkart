@@ -11,6 +11,7 @@ const state = {
   sites: [], // [{ id, label }]
   selected: "all",
   page: 1,
+  globalAuto: false,
 };
 
 function countFor(siteId) {
@@ -356,6 +357,33 @@ function presetCard(preset) {
     else enterEdit();
   });
 
+  // Per-preset auto-apply toggle — an opt-out exception, shown only while the
+  // global switch is on (off = the whole feature is dormant, so no per-card UI).
+  let autoRow = null;
+  if (state.globalAuto) {
+    const autoToggle = el("input", { type: "checkbox", class: "auto-toggle" });
+    autoToggle.checked = preset.autoApply !== false;
+    autoToggle.addEventListener("change", async () => {
+      const val = autoToggle.checked;
+      try {
+        await send({ type: "setAutoApply", id: preset.id, value: val });
+        preset.autoApply = val;
+      } catch (e) {
+        autoToggle.checked = !val;
+        alert(e.message);
+      }
+    });
+    autoRow = el(
+      "label",
+      { class: "auto-row", title: "Redirect to these filters when you search this on the site" },
+      [
+        autoToggle,
+        el("span", { class: "auto-switch" }),
+        el("span", { class: "auto-label", text: "Auto-apply on this search" }),
+      ]
+    );
+  }
+
   return el("li", { class: "preset spine-" + color }, [
     el("div", { class: "preset-head" }, [
       tile,
@@ -363,6 +391,7 @@ function presetCard(preset) {
         topline,
         el("div", { class: "preset-sub", text: sub }),
         preset.search ? el("div", { class: "preset-search" }, [icon("search"), el("span", { text: preset.search, title: preset.search })]) : null,
+        autoRow,
       ]),
       actions,
     ]),
@@ -433,6 +462,61 @@ function pager(total, cur, go) {
   return el("nav", { class: "pager", "aria-label": "Pagination" }, kids);
 }
 
+// Library-wide auto-apply controls: the global master switch plus bulk
+// enable/disable of the per-preset flags (bulk links only while global is on).
+function autoBar() {
+  const masterToggle = el("input", { type: "checkbox", class: "auto-toggle" });
+  masterToggle.checked = state.globalAuto;
+  masterToggle.addEventListener("change", async () => {
+    const val = masterToggle.checked;
+    try {
+      await send({ type: "setGlobalAutoApply", value: val });
+      state.globalAuto = val;
+      renderPanel();
+    } catch (e) {
+      masterToggle.checked = !val;
+      alert(e.message);
+    }
+  });
+  const master = el(
+    "label",
+    { class: "master-row", title: "Redirect matching searches to your saved filters automatically" },
+    [
+      masterToggle,
+      el("span", { class: "auto-switch" }),
+      el("div", { class: "master-text" }, [
+        el("span", { class: "master-label", text: "Auto-apply saved filters" }),
+        el("span", {
+          class: "master-hint",
+          text: state.globalAuto
+            ? "On \u2014 matching searches jump to saved filters"
+            : "Off \u2014 apply filters manually",
+        }),
+      ]),
+    ]
+  );
+
+  const bar = el("div", { class: "auto-bar" }, [master]);
+  if (state.globalAuto) {
+    const bulkAll = (value) => async () => {
+      try {
+        await send({ type: "setAllAutoApply", value });
+        await load();
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+    bar.appendChild(
+      el("div", { class: "bulk-row" }, [
+        el("button", { class: "bulk-link", text: "Enable all", onclick: bulkAll(true) }),
+        el("span", { class: "bulk-sep", text: "\u00b7" }),
+        el("button", { class: "bulk-link", text: "Disable all", onclick: bulkAll(false) }),
+      ])
+    );
+  }
+  return bar;
+}
+
 function renderPanel() {
   panel.textContent = "";
   const items = state.presets
@@ -469,6 +553,8 @@ function renderPanel() {
     }
   }
   panel.appendChild(headEl);
+
+  if (state.presets.length) panel.appendChild(autoBar());
 
   if (!items.length) {
     const empty = el("div", { class: "empty" }, [
@@ -539,7 +625,7 @@ function exportPresets() {
       search: p.search,
       filters: p.filters,
       meta: p.meta || null,
-      autoApply: p.autoApply === true,
+      autoApply: p.autoApply !== false,
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
     })),
@@ -594,9 +680,13 @@ async function importFromFile(file) {
 
 async function load() {
   try {
-    const { presets, sites } = await send({ type: "all" });
+    const [{ presets, sites }, settings] = await Promise.all([
+      send({ type: "all" }),
+      send({ type: "getSettings" }).catch(() => ({ settings: {} })),
+    ]);
     state.presets = presets || [];
     state.sites = sites || [];
+    state.globalAuto = !!(settings && settings.settings && settings.settings.autoApply);
     if (state.selected !== "all" && countFor(state.selected) === 0) {
       state.selected = "all";
     }
@@ -624,7 +714,7 @@ function scheduleReload() {
 if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== "sync") return;
-    if (Object.keys(changes).some((k) => k.startsWith("preset:"))) scheduleReload();
+    if (Object.keys(changes).some((k) => k.startsWith("preset:") || k === "settings")) scheduleReload();
   });
 }
 

@@ -240,16 +240,18 @@
   // Auto-apply: on a bare supported search, redirect once per tab-session to a
   // matching auto-apply preset's filtered URL. sessionStorage keys the guard to
   // this tab + search, so clearing filters mid-session isn't fought. We read
-  // storage locally first and only wake the service worker when at least one
-  // auto-apply preset exists (the default is off, so usually we skip entirely).
+  // storage locally first and only wake the service worker when the global
+  // master switch is on and at least one preset is still included.
   (async function autoApply() {
     try {
       if (!(chrome && chrome.storage && chrome.storage.sync)) return;
       const all = await new Promise((res) => chrome.storage.sync.get(null, res));
-      const hasAuto = Object.keys(all).some(
-        (k) => k.startsWith("preset:") && all[k] && all[k].autoApply === true
+      const settings = all.settings && typeof all.settings === "object" ? all.settings : {};
+      if (!settings.autoApply) return; // global master switch off
+      const hasEligible = Object.keys(all).some(
+        (k) => k.startsWith("preset:") && all[k] && all[k].autoApply !== false
       );
-      if (!hasAuto) return;
+      if (!hasEligible) return;
       const res = await send({ type: "autoApplyTarget", url: location.href });
       if (!res || !res.url || !res.key || res.url === location.href) return;
       const guard = "fk_autoapply:" + res.key;
