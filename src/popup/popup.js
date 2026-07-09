@@ -291,7 +291,7 @@ function saveBar(context, existingNames) {
 function openManager() {
   const url = chrome.runtime.getURL("src/manager/manager.html");
   if (chrome.tabs && chrome.tabs.create) chrome.tabs.create({ url });
-  else window.open(url, "_blank");
+  else window.open(url, "_blank", "noopener");
   window.close();
 }
 

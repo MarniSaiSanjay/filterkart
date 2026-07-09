@@ -33,7 +33,7 @@
 
   const host = document.createElement("div");
   host.id = "filterkart-root";
-  const root = host.attachShadow({ mode: "open" });
+  const root = host.attachShadow({ mode: "closed" });
   const style = document.createElement("style");
   style.textContent = `
     :host { all: initial; }

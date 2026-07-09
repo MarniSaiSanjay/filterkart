@@ -72,3 +72,31 @@ test("deletePreset removes and reports", async () => {
   const all = await listPresets(s);
   assertEqual(all.length, 0);
 });
+
+test("listPresets sanitizes tampered entries", async () => {
+  const s = mockStore({
+    presets: [
+      { id: "p1", siteId: "amazon", name: "Good", filters: [{ facet: "brand", value: "HP" }] },
+      { id: "p2", siteId: "myntra", name: "BadFilters", filters: "not-an-array" },
+      { id: "p3", siteId: "ajio", filters: [{ facet: "x", value: "y" }, "junk", null] },
+      { siteId: "flipkart", name: "NoId" },
+      "totally-not-an-object",
+      null,
+    ],
+  });
+  const all = await listPresets(s);
+  assertEqual(all.length, 3);
+  assertEqual(all.map((p) => p.id).join(","), "p1,p2,p3");
+  const bad = all.find((p) => p.id === "p2");
+  assert(Array.isArray(bad.filters), "filters coerced to array");
+  assertEqual(bad.filters.length, 0);
+  const p3 = all.find((p) => p.id === "p3");
+  assertEqual(p3.name, "");
+  assertEqual(p3.filters.length, 1);
+});
+
+test("listPresets tolerates non-array storage value", async () => {
+  const s = mockStore({ presets: { not: "a list" } });
+  const all = await listPresets(s);
+  assertEqual(all.length, 0);
+});

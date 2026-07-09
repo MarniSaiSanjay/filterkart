@@ -13,13 +13,41 @@ function area(override) {
   throw new Error("no chrome.storage.sync available");
 }
 
+const str = (v) => (typeof v === "string" ? v : "");
+
+// Coerce a stored entry into the canonical preset shape. Returns null for
+// entries that can't be salvaged (not an object, or missing id/siteId), so a
+// single tampered record can't break rendering of the whole list.
+function sanitizePreset(p) {
+  if (!p || typeof p !== "object") return null;
+  if (!str(p.id) || !str(p.siteId)) return null;
+  const filters = Array.isArray(p.filters)
+    ? p.filters
+        .filter((f) => f && typeof f === "object")
+        .map((f) => ({ facet: str(f.facet), value: str(f.value) }))
+    : [];
+  return {
+    id: p.id,
+    name: str(p.name),
+    siteId: p.siteId,
+    canonicalCategory: str(p.canonicalCategory),
+    search: str(p.search),
+    filters,
+    meta: p.meta && typeof p.meta === "object" ? p.meta : null,
+    createdAt: typeof p.createdAt === "number" ? p.createdAt : Date.now(),
+    updatedAt: typeof p.updatedAt === "number" ? p.updatedAt : Date.now(),
+  };
+}
+
 function getAll(store) {
   return new Promise((resolve, reject) => {
     try {
       store.get(KEY, (res) => {
         const err = typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError;
         if (err) return reject(new Error(err.message));
-        resolve((res && res[KEY]) || []);
+        const raw = (res && res[KEY]) || [];
+        const list = Array.isArray(raw) ? raw : [];
+        resolve(list.map(sanitizePreset).filter(Boolean));
       });
     } catch (e) {
       reject(e);

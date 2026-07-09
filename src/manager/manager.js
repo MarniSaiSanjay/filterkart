@@ -218,7 +218,7 @@ function presetCard(preset) {
         try {
           const { url } = await send({ type: "buildUrl", id: preset.id });
           if (chrome.tabs && chrome.tabs.create) chrome.tabs.create({ url });
-          else window.open(url, "_blank");
+          else window.open(url, "_blank", "noopener");
         } catch (e) {
           alert(e.message);
         } finally {
