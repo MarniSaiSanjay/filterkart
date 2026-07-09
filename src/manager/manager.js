@@ -506,5 +506,22 @@ async function load() {
 
 load();
 
+// Live refresh: reload when presets change in another surface (popup, in-page
+// panel, or a 2nd manager tab). Debounced since one edit can touch several keys.
+let reloadTimer = null;
+function scheduleReload() {
+  if (reloadTimer) clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(() => {
+    reloadTimer = null;
+    load();
+  }, 200);
+}
+if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "sync") return;
+    if (Object.keys(changes).some((k) => k.startsWith("preset:"))) scheduleReload();
+  });
+}
+
 const yearEl = document.getElementById("foot-year");
 if (yearEl) yearEl.textContent = String(new Date().getFullYear());

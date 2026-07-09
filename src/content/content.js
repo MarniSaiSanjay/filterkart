@@ -200,5 +200,21 @@
     if (open) refresh();
   });
 
+  // Live refresh: if presets change elsewhere while this panel is open,
+  // re-render so it isn't stale. Reopening already refreshes; debounced.
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+    let t = null;
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "sync") return;
+      if (!panel.classList.contains("open")) return;
+      if (!Object.keys(changes).some((k) => k.startsWith("preset:"))) return;
+      if (t) clearTimeout(t);
+      t = setTimeout(() => {
+        t = null;
+        if (panel.classList.contains("open")) refresh();
+      }, 200);
+    });
+  }
+
   document.documentElement.appendChild(host);
 })();
