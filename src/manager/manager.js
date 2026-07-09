@@ -446,6 +446,20 @@ function renderPanel() {
       text: `${items.length} preset${items.length === 1 ? "" : "s"}`,
     }),
   ]);
+  const tools = el("div", { class: "panel-tools" }, [
+    el(
+      "button",
+      { class: "tool-btn", title: "Download all presets as a JSON backup", onclick: exportPresets },
+      [icon("external"), el("span", { text: "Export" })]
+    ),
+    el(
+      "button",
+      { class: "tool-btn", title: "Import presets from a JSON backup", onclick: triggerImport },
+      [icon("plus"), el("span", { text: "Import" })]
+    ),
+  ]);
+  if (!state.presets.length) tools.firstChild.disabled = true; // nothing to export yet
+  headEl.appendChild(tools);
   if (state.selected !== "all") {
     const site = state.sites.find((s) => s.id === state.selected);
     if (site) {
@@ -489,6 +503,90 @@ function renderPanel() {
         window.scrollTo({ top: 0, behavior: "smooth" });
       })
     );
+  }
+}
+
+// --- export / import (backup) ----------------------------------------------
+
+// Show a brief status toast; survives the panel re-render that import triggers.
+let toastTimer = null;
+function toast(msg, isError) {
+  let t = document.getElementById("fk-toast");
+  if (!t) {
+    t = el("div", { class: "fk-toast" });
+    t.id = "fk-toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.toggle("error", !!isError);
+  t.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3200);
+}
+
+// Export the whole library (all sites) to a JSON file. The id is dropped so an
+// import always mints fresh ids and never collides with existing presets.
+function exportPresets() {
+  if (!state.presets.length) return;
+  const data = {
+    app: "filterkart",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    presets: state.presets.map((p) => ({
+      name: p.name,
+      siteId: p.siteId,
+      canonicalCategory: p.canonicalCategory,
+      search: p.search,
+      filters: p.filters,
+      meta: p.meta || null,
+      autoApply: p.autoApply === true,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    })),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = el("a", {
+    href: url,
+    download: `filterkart-presets-${new Date().toISOString().slice(0, 10)}.json`,
+  });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function triggerImport() {
+  const input = el("input", { type: "file", accept: "application/json,.json" });
+  input.style.display = "none";
+  input.addEventListener("change", async () => {
+    const file = input.files && input.files[0];
+    if (file) await importFromFile(file);
+    input.remove();
+  });
+  document.body.appendChild(input);
+  input.click();
+}
+
+async function importFromFile(file) {
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+  } catch {
+    return toast("That file isn't valid JSON.", true);
+  }
+  const presets = Array.isArray(data)
+    ? data
+    : data && Array.isArray(data.presets)
+      ? data.presets
+      : null;
+  if (!presets) return toast("No presets found in that file.", true);
+  try {
+    const { added, skipped } = await send({ type: "importPresets", presets });
+    toast(added ? `Imported ${added}${skipped ? ` \u00b7 skipped ${skipped}` : ""}.` : "Nothing new to import.");
+    await load();
+  } catch (e) {
+    toast(e.message, true);
   }
 }
 

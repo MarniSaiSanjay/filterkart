@@ -258,3 +258,45 @@ test("autoApplyTarget breaks a tie by most recently updated preset", async () =>
   assert(res.url.includes("Dell"), "most recent preset's filters win the tie");
   assert(!res.url.includes("p_123"), "not the older preset's filters");
 });
+
+test("importPresets adds valid presets and skips duplicates + junk", async () => {
+  const r = makeRouter({ url: AMAZON_URL });
+  await r.route({ type: "save", name: "existing" }); // laptop + p_123/p_36
+
+  const res = await r.route({
+    type: "importPresets",
+    presets: [
+      // duplicate of the existing preset -> skipped
+      { name: "dupe", siteId: "amazon", search: "laptop", filters: [
+        { facet: "p_123", value: "308445" }, { facet: "p_36", value: "2850000-6100000" },
+      ] },
+      // new, valid -> added
+      { name: "shoes", siteId: "amazon", search: "shoes", filters: [{ facet: "p_89", value: "Nike" }] },
+      // unknown site -> skipped
+      { name: "bad site", siteId: "nosuchsite", search: "x", filters: [{ facet: "a", value: "b" }] },
+      // no filters -> skipped
+      { name: "empty", siteId: "amazon", search: "y", filters: [] },
+      // not an object -> skipped
+      "garbage",
+    ],
+  });
+  assertEqual(res.added, 1);
+  assertEqual(res.skipped, 4);
+  const all = await r.route({ type: "all" });
+  assertEqual(all.presets.length, 2);
+});
+
+test("importPresets preserves autoApply and mints fresh ids", async () => {
+  const r = makeRouter({ url: AMAZON_URL });
+  const res = await r.route({
+    type: "importPresets",
+    presets: [
+      { id: "should-be-ignored", name: "p", siteId: "amazon", search: "laptop", autoApply: true,
+        filters: [{ facet: "p_89", value: "Dell" }] },
+    ],
+  });
+  assertEqual(res.added, 1);
+  const all = await r.route({ type: "all" });
+  assertEqual(all.presets[0].autoApply, true);
+  assert(all.presets[0].id !== "should-be-ignored", "assigns a fresh id");
+});

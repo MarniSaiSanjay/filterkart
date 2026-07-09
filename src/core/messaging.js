@@ -183,6 +183,62 @@ async function all(deps) {
   return { presets, sites };
 }
 
+// Coerce one imported record into a safe, storable preset (new id assigned by
+// createPreset). Rejects records for unknown sites or with no valid filters.
+function sanitizeImport(raw, deps) {
+  if (!raw || typeof raw !== "object") return null;
+  const siteId = typeof raw.siteId === "string" ? raw.siteId : "";
+  const adapter = siteId && deps.getAdapterById(siteId);
+  if (!adapter) return null;
+  const filters = Array.isArray(raw.filters)
+    ? raw.filters
+        .filter((f) => f && typeof f === "object" && typeof f.facet === "string" && typeof f.value === "string")
+        .map((f) => ({ facet: f.facet, value: f.value }))
+    : [];
+  if (!filters.length) return null;
+  const search = typeof raw.search === "string" ? raw.search : "";
+  const name = typeof raw.name === "string" && raw.name.trim() ? raw.name : search || adapter.label;
+  return {
+    name: capName(name),
+    siteId,
+    canonicalCategory:
+      typeof raw.canonicalCategory === "string" ? raw.canonicalCategory : deps.normalize(search),
+    search,
+    filters,
+    meta: raw.meta && typeof raw.meta === "object" ? raw.meta : null,
+    autoApply: raw.autoApply === true,
+    createdAt: typeof raw.createdAt === "number" ? raw.createdAt : Date.now(),
+    updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : Date.now(),
+  };
+}
+
+// Bulk-create presets from an exported file, skipping invalid records and any
+// that duplicate an existing preset (same site + search + filter set).
+async function importPresets(deps, msg) {
+  const incoming = Array.isArray(msg.presets) ? msg.presets : [];
+  const existing = await deps.listPresets();
+  const sigOf = (p) => `${p.siteId}\u0000${p.search || ""}\u0000${filterSig(p.filters)}`;
+  const seen = new Set(existing.map(sigOf));
+  let added = 0;
+  let skipped = 0;
+  for (const raw of incoming) {
+    const preset = sanitizeImport(raw, deps);
+    if (!preset) {
+      skipped++;
+      continue;
+    }
+    const sig = sigOf(preset);
+    if (seen.has(sig)) {
+      skipped++;
+      continue;
+    }
+    seen.add(sig);
+    await deps.createPreset(preset);
+    added++;
+  }
+  return { added, skipped };
+}
+
 export function createRouter(deps) {
   return async function route(msg) {
     switch (msg && msg.type) {
@@ -202,6 +258,8 @@ export function createRouter(deps) {
         return autoApplyTarget(deps, msg);
       case "all":
         return all(deps);
+      case "importPresets":
+        return importPresets(deps, msg);
       case "delete":
         return { ok: await deps.deletePreset(msg.id) };
       case "rename":
