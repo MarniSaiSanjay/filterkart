@@ -252,7 +252,7 @@ function saveBar(context, existingNames) {
       class: "name-input",
       placeholder: "Preset name",
       maxlength: 50,
-      value: uniqueName(context.search || "", existingNames),
+      value: uniqueName(context.search || "", existingNames).slice(0, 50),
     });
     const confirm = el("button", { class: "save-btn", text: "Save" });
     const cancel = el("button", { class: "text-btn", text: "Cancel" });

@@ -89,7 +89,8 @@
       border-bottom: 1px solid rgba(60,60,67,0.1);
     }
     li:hover { background: rgba(120,120,128,0.06); }
-    .pname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; font-size: 13px; }
+    li button.act { flex-shrink: 0; }
+    .pname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; font-size: 13px; }
   `;
   root.appendChild(style);
 
@@ -142,7 +143,7 @@
       const input = document.createElement("input");
       input.placeholder = "Preset name";
       input.maxLength = 50;
-      input.value = uniqueName(context.search || "", existingNames);
+      input.value = uniqueName(context.search || "", existingNames).slice(0, 50);
       const save = document.createElement("button");
       save.className = "act";
       save.textContent = "Save";

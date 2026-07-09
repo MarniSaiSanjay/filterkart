@@ -183,7 +183,7 @@ function filterChips(filters) {
   const wrap = el("div", { class: "chips" });
   const max = 6;
   filters.slice(0, max).forEach((f) => {
-    wrap.appendChild(el("span", { class: "chip", text: f.value }));
+    wrap.appendChild(el("span", { class: "chip", text: f.value, title: f.value }));
   });
   if (filters.length > max) {
     wrap.appendChild(el("span", { class: "chip more", text: `+${filters.length - max} more` }));
@@ -353,7 +353,7 @@ function presetCard(preset) {
       el("div", { class: "preset-body" }, [
         topline,
         el("div", { class: "preset-sub", text: sub }),
-        preset.search ? el("div", { class: "preset-search" }, [icon("search"), el("span", { text: preset.search })]) : null,
+        preset.search ? el("div", { class: "preset-search" }, [icon("search"), el("span", { text: preset.search, title: preset.search })]) : null,
       ]),
       actions,
     ]),
