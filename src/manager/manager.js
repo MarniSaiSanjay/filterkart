@@ -25,9 +25,7 @@ function labelFor(siteId) {
 
 // --- sidebar ---------------------------------------------------------------
 
-// Site logos come from Google's domain-keyed favicon service (S2), which resolves
-// any site's real icon on demand and scales as adapters are added. Falls back to
-// a coloured monogram tile if the icon can't be fetched.
+// Coloured monogram tile (first letter) — the favicon fallback.
 function applyMonogram(wrap, site) {
   wrap.textContent = String(site.label || "?").trim().charAt(0).toUpperCase();
   wrap.classList.add("nav-mono", "tile-" + pickColor(site.id || site.label));
@@ -75,17 +73,23 @@ function navItem(site) {
     [
       ico,
       el("span", { class: "nav-label", text: labelFor(site.id) }),
-      el("span", { class: "nav-count", text: String(count) }),
+      countBadge(count, isAll),
     ]
   );
+}
+
+// Site badges cap at "99+" (real count in the tooltip); "All presets" is uncapped.
+function countBadge(count, isAll) {
+  const capped = !isAll && count > 99;
+  const badge = el("span", { class: "nav-count", text: capped ? "99+" : String(count) });
+  if (capped) badge.title = `${count} presets`;
+  return badge;
 }
 
 function renderNav() {
   nav.textContent = "";
   nav.appendChild(navItem({ id: "all", label: "All presets" }));
-  // Only sites the user actually uses (have >=1 preset) appear in the sidebar,
-  // most-used first; ties fall back to label order. This keeps the sidebar a
-  // mirror of the user's activity rather than a growing list of every adapter.
+  // Sidebar shows only used sites (>=1 preset), most-used first, ties by label.
   const used = state.sites
     .filter((s) => countFor(s.id) > 0)
     .sort((a, b) => {
@@ -93,18 +97,18 @@ function renderNav() {
       return diff !== 0 ? diff : labelFor(a.id).localeCompare(labelFor(b.id));
     });
   for (const site of used) nav.appendChild(navItem(site));
-  // Supported-but-unused sites live behind a compact "＋" discovery affordance,
-  // but only once the user has started using at least one site. On first run the
-  // full list is surfaced center-stage via the empty state instead.
+  // Unused sites hide behind the "＋" discovery affordance, but only once at
+  // least one site is used; first-run surfaces them in the empty state instead.
   const unused = state.sites.filter((s) => countFor(s.id) === 0);
   if (used.length && unused.length) nav.appendChild(discoveryAffordance(unused));
 }
 
-// A small avatar-stack + "＋" row pinned under the used-site list. Clicking it
-// opens a popover listing every supported site the user hasn't used yet; each
-// entry opens that site's home page so they can go apply filters and save.
+// A small avatar-stack + "＋" row pinned under the used-site list. With several
+// unused sites it opens a popover listing them all; with a single one left it
+// shows that site's name and opens its home page directly (no popover).
 function discoveryAffordance(unused) {
   const wrap = el("div", { class: "nav-add-wrap" });
+  const single = unused.length === 1;
   const stack = el(
     "span",
     { class: "add-stack" },
@@ -118,15 +122,16 @@ function discoveryAffordance(unused) {
     "button",
     {
       class: "nav-item nav-add",
-      title: "Discover more supported sites",
+      title: single ? `Open ${unused[0].label}` : "Discover more supported sites",
       onclick: (ev) => {
         ev.stopPropagation();
-        toggleAddPopover(wrap, unused);
+        if (single) window.open(unused[0].home || "#", "_blank", "noopener");
+        else toggleAddPopover(wrap, unused);
       },
     },
     [
       el("span", { class: "nav-ico add-plus" }, [icon("plus")]),
-      el("span", { class: "nav-label", text: "More sites" }),
+      el("span", { class: "nav-label", text: single ? `Add ${unused[0].label}` : "More sites" }),
       stack,
     ]
   );
@@ -358,9 +363,7 @@ function presetCard(preset) {
 
 // --- main panel ------------------------------------------------------------
 
-// A "Works on" grid of clickable site chips for the first-run empty state (no
-// presets anywhere), so a brand-new user immediately sees which sites are
-// supported and can jump straight to one to start shopping. Each chip opens
+// "Works on" grid of site chips for the first-run empty state; each chip opens
 // that site's home page in a new tab.
 function supportedSitesHint() {
   if (!state.sites.length) return null;

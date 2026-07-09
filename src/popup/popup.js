@@ -329,9 +329,10 @@ function render(data) {
   const otherItems = (others || []).map((p) => ({ preset: p }));
   const existingNames = [...matchedItems, ...otherItems].map((x) => x.preset.name);
 
-  // The popup only surfaces confident matches for the current search; the full
-  // library (all sites, edit/delete) lives on the manager page behind "View all".
-  const shown = matchedItems;
+  // The popup surfaces only the top few confident matches; the full library
+  // (all sites, edit/delete) lives on the manager page behind "View all".
+  const MATCH_CAP = 5;
+  const shown = matchedItems.slice(0, MATCH_CAP);
   const total = matchedItems.length + otherItems.length;
 
   const head = el("div", { class: "presets-head" }, [
@@ -349,6 +350,14 @@ function render(data) {
 
   if (shown.length) {
     app.appendChild(el("ul", { class: "preset-list" }, shown.map((x) => presetCard(x.preset, x.score))));
+    const hidden = matchedItems.length - shown.length;
+    if (hidden > 0) {
+      app.appendChild(
+        el("button", { class: "more-line", onclick: openManager }, [
+          `+${hidden} more match${hidden === 1 ? "" : "es"} \u2014 View all`,
+        ])
+      );
+    }
   } else if (otherItems.length) {
     // No confident match for this search, but the user has saved presets.
     app.appendChild(
