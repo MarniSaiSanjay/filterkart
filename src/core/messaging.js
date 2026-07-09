@@ -60,7 +60,15 @@ async function listForContext(deps) {
   const forSite = all.filter((p) => p.siteId === context.siteId);
   const ranked = deps.rankPresets(forSite, context.search, { threshold: 0.6 });
   const matchedIds = new Set(ranked.map((r) => r.preset.id));
-  const matched = ranked.map((r) => ({ preset: r.preset, score: r.score }));
+  // A preset is "applied" when the current page already carries its exact filter
+  // set — lets the popup show Remove instead of Apply, and self-corrects on
+  // refresh/close since it's derived from the live page URL each time.
+  const curSig = context.filters && context.filters.length ? filterSig(context.filters) : null;
+  const matched = ranked.map((r) => ({
+    preset: r.preset,
+    score: r.score,
+    applied: curSig != null && filterSig(r.preset.filters) === curSig,
+  }));
   const others = forSite.filter((p) => !matchedIds.has(p.id));
   return { context, matched, others };
 }
@@ -201,6 +209,24 @@ async function autoApplyTarget(deps, msg) {
   return { url, key: adapter.id + "|" + String(search).trim().toLowerCase() };
 }
 
+// Build the URL that clears all filters from the current page (keeps the
+// search). Returns the auto-apply guard key so the content script can suppress
+// a re-auto-apply on the bare search it's about to navigate to.
+async function removeTarget(deps, msg) {
+  let pageUrl;
+  try {
+    pageUrl = new URL(msg.url);
+  } catch {
+    return { url: null };
+  }
+  const adapter = deps.resolveAdapter(msg.url);
+  if (!adapter) return { url: null };
+  const { search } = adapter.parse(pageUrl);
+  if (!search) return { url: null };
+  const url = adapter.build(pageUrl, search, [], null);
+  return { url, key: adapter.id + "|" + String(search).trim().toLowerCase() };
+}
+
 // Everything the manager page needs to render: the full preset library plus
 // the list of supported sites (id + label) for the sidebar.
 async function all(deps) {
@@ -288,6 +314,8 @@ export function createRouter(deps) {
         return setGlobalAutoApply(deps, msg);
       case "autoApplyTarget":
         return autoApplyTarget(deps, msg);
+      case "removeTarget":
+        return removeTarget(deps, msg);
       case "all":
         return all(deps);
       case "importPresets":

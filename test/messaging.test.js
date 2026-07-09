@@ -343,3 +343,34 @@ test("importPresets keeps an autoApply:false exception and mints fresh ids", asy
   assertEqual(q.autoApply, true);
   assert(p.id !== "should-be-ignored", "assigns a fresh id");
 });
+
+test("list marks a preset applied when the page already carries its filters", async () => {
+  const r = makeRouter({ url: AMAZON_URL });
+  await r.route({ type: "save", name: "Laptops" }); // saved with the page's filters
+
+  // Same URL: the page carries the preset's exact filters -> applied.
+  const on = await r.route({ type: "list" });
+  assertEqual(on.matched.length, 1);
+  assertEqual(on.matched[0].applied, true);
+
+  // Bare search: no filters on the page -> not applied.
+  r.tab.url = AMAZON_BARE;
+  const off = await r.route({ type: "list" });
+  assertEqual(off.matched.length, 1);
+  assertEqual(off.matched[0].applied, false);
+});
+
+test("removeTarget returns the bare search URL and the auto-apply guard key", async () => {
+  const { route } = makeRouter({ url: AMAZON_URL });
+  const res = await route({ type: "removeTarget", url: AMAZON_URL });
+  assert(res.url, "returns a url");
+  assert(!res.url.includes("p_123"), "strips the applied filters");
+  assert(res.url.includes("k=laptop"), "keeps the search term");
+  assertEqual(res.key, "amazon|laptop");
+});
+
+test("removeTarget returns null url for an unsupported site", async () => {
+  const { route } = makeRouter({ url: "https://www.example.com/x" });
+  const res = await route({ type: "removeTarget", url: "https://www.example.com/x" });
+  assertEqual(res.url, null);
+});

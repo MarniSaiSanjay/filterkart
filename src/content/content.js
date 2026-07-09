@@ -261,5 +261,30 @@
     } catch {}
   })();
 
+  // Remove filters: the popup's Remove button asks us to clear the current
+  // page's filters (back to a bare search). We set the auto-apply guard first so
+  // the bare search we land on isn't immediately re-auto-applied (sessionStorage
+  // survives same-tab navigation), then navigate.
+  if (chrome && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+      if (!msg || msg.type !== "fkRemoveFilters") return;
+      (async () => {
+        try {
+          const res = await send({ type: "removeTarget", url: location.href });
+          if (!res || !res.url) {
+            sendResponse({ ok: false, error: "nothing to remove" });
+            return;
+          }
+          if (res.key) sessionStorage.setItem("fk_autoapply:" + res.key, "1");
+          sendResponse({ ok: true });
+          setTimeout(() => location.replace(res.url), 0); // let the reply flush
+        } catch (e) {
+          sendResponse({ ok: false, error: e.message });
+        }
+      })();
+      return true; // async response
+    });
+  }
+
   document.documentElement.appendChild(host);
 })();

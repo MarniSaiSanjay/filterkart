@@ -150,10 +150,10 @@ main { padding: 0 var(--gutter); flex: 1 1 auto; min-height: 0; overflow-y: auto
 }
 .apply-btn:hover { background: var(--accent-ink); }
 .apply-btn:active { transform: scale(0.96); }
-
-/* "Auto-applied" badge shown in place of the Apply button when auto-apply is on */
-.applied-badge { display: inline-flex; align-items: center; gap: 4px; padding: 8px 12px; border-radius: 10px; background: var(--ok-soft); color: var(--ok); font-family: var(--display); font-size: 13px; font-weight: 700; white-space: nowrap; }
-.applied-badge svg { width: 14px; height: 14px; }
+.apply-btn:disabled { opacity: 0.6; cursor: default; }
+/* "Remove" state — the preset's filters are currently on the page */
+.apply-btn.is-remove { background: var(--soft); color: var(--ink-2); }
+.apply-btn.is-remove:hover { background: var(--danger-soft, #fdecec); color: var(--danger, #d64545); }
 
 /* Title row: name + inline rename (pencil / tick) */
 .preset-name-row { display: flex; align-items: center; gap: 6px; }

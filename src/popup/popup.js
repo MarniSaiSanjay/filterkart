@@ -7,12 +7,22 @@
 import { send, el, icon, gaugeIcon, pickIcon, pickColor, timeAgo } from "../ui/ui.js";
 
 const app = document.getElementById("app");
-const state = { favIconUrl: null, globalAuto: false };
+const state = { favIconUrl: null, tabId: null };
 
 // --- error / helpers -------------------------------------------------------
 
 function clear() {
   app.textContent = "";
+}
+
+// Ask the content script to clear the current page's filters (Remove action).
+// It sets the auto-apply guard and navigates the tab back to a bare search.
+async function removeFilters() {
+  if (!(chrome.tabs && chrome.tabs.sendMessage) || state.tabId == null) {
+    throw new Error("Can't reach this page to remove filters.");
+  }
+  const res = await chrome.tabs.sendMessage(state.tabId, { type: "fkRemoveFilters" });
+  if (res && res.ok === false) throw new Error(res.error || "Couldn't remove filters.");
 }
 
 function showError(message) {
@@ -69,7 +79,7 @@ function contextCard(context) {
 
 // --- preset card -----------------------------------------------------------
 
-function presetCard(preset, score) {
+function presetCard(preset, score, applied) {
   const color = pickColor(preset.id || preset.name);
   const tile = el("div", { class: "preset-icon tile-" + color }, [
     icon(pickIcon(preset.name + " " + preset.search)),
@@ -101,32 +111,39 @@ function presetCard(preset, score) {
     );
   }
 
-  const apply = el("button", {
-    class: "apply-btn",
-    text: "Apply",
-    onclick: async () => {
-      try {
-        await send({ type: "apply", id: preset.id });
-        window.close();
-      } catch (e) {
-        showError(e.message);
-      }
-    },
-  });
-
-  // When auto-apply is on, the preset applies itself on its search, so the
-  // manual Apply button is replaced by a static "Auto-applied" badge.
-  const appliedBadge = el("span", { class: "applied-badge", title: "Auto-applies on this search" }, [
-    icon("check"),
-    el("span", { text: "Auto-applied" }),
-  ]);
+  // Reactive action: shows "Apply" normally, or "Remove" when the page already
+  // carries this preset's exact filters (whether applied manually or by
+  // auto-apply). Derived from the live page, so it self-corrects on refresh.
   const applySlot = el("span", { class: "apply-slot" });
+  let isApplied = !!applied;
+  const actionBtn = el("button", { class: "apply-btn" });
   function paintApply() {
-    applySlot.textContent = "";
-    const auto = state.globalAuto && preset.autoApply !== false;
-    applySlot.appendChild(auto ? appliedBadge : apply);
+    actionBtn.textContent = "";
+    actionBtn.classList.toggle("is-remove", isApplied);
+    actionBtn.title = isApplied
+      ? "Clear these filters from the page"
+      : "Apply these filters to the page";
+    actionBtn.appendChild(el("span", { text: isApplied ? "Remove" : "Apply" }));
   }
+  actionBtn.addEventListener("click", async () => {
+    actionBtn.disabled = true;
+    try {
+      if (isApplied) {
+        await removeFilters();
+        isApplied = false;
+      } else {
+        await send({ type: "apply", id: preset.id });
+        isApplied = true;
+      }
+      paintApply();
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
   paintApply();
+  applySlot.appendChild(actionBtn);
 
   const del = el(
     "button",
@@ -352,7 +369,7 @@ function render(data) {
   app.appendChild(contextCard(context));
   app.appendChild(el("div", { class: "divider" }));
 
-  const matchedItems = (matched || []).map((m) => ({ preset: m.preset, score: m.score }));
+  const matchedItems = (matched || []).map((m) => ({ preset: m.preset, score: m.score, applied: m.applied }));
   const otherItems = (others || []).map((p) => ({ preset: p }));
   const existingNames = [...matchedItems, ...otherItems].map((x) => x.preset.name);
 
@@ -376,7 +393,7 @@ function render(data) {
   app.appendChild(head);
 
   if (shown.length) {
-    app.appendChild(el("ul", { class: "preset-list" }, shown.map((x) => presetCard(x.preset, x.score))));
+    app.appendChild(el("ul", { class: "preset-list" }, shown.map((x) => presetCard(x.preset, x.score, x.applied))));
     const hidden = matchedItems.length - shown.length;
     if (hidden > 0) {
       app.appendChild(
@@ -410,17 +427,16 @@ async function load() {
   try {
     if (chrome.tabs && chrome.tabs.query) {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      state.favIconUrl = (tabs && tabs[0] && tabs[0].favIconUrl) || null;
+      const tab = tabs && tabs[0];
+      state.favIconUrl = (tab && tab.favIconUrl) || null;
+      state.tabId = (tab && tab.id != null) ? tab.id : null;
     }
   } catch {
     state.favIconUrl = null;
+    state.tabId = null;
   }
   try {
-    const [data, settings] = await Promise.all([
-      send({ type: "list" }),
-      send({ type: "getSettings" }).catch(() => ({ settings: {} })),
-    ]);
-    state.globalAuto = !!(settings && settings.settings && settings.settings.autoApply);
+    const data = await send({ type: "list" });
     render(data);
   } catch (e) {
     showError(e.message);
