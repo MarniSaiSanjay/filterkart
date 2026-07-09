@@ -1,9 +1,6 @@
-// Meesho adapter.
-// Meesho encodes each selected filter value as a triple of query params:
-//   <Facet>[<i>][id]=443&<Facet>[<i>][label]=Women&<Facet>[<i>][payload]=<base64>
-// where <base64> decodes to {field, op, value}. The payload is opaque and its
-// `field` mapping is facet-specific, so we store and replay all three parts
-// verbatim rather than interpreting them. Search term is the `q` param.
+// Meesho adapter. Each filter value is a param triple <Facet>[i][id|label|payload];
+// the payload is opaque, so all three parts are stored and replayed verbatim.
+// Search term is the `q` param.
 import { toURL } from "./base.js";
 
 // Matches keys like `Gender[0][id]` / `Price[1][payload]`. Facet may contain

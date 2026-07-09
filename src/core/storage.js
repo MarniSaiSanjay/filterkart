@@ -1,15 +1,6 @@
-// FilterKart preset storage — CRUD over chrome.storage.sync.
-//
-// Preset schema:
-//   {
-//     id, name,
-//     siteId,              // "amazon" | "flipkart" | "myntra" | "ajio"
-//     canonicalCategory,   // normalized search category (for similarity matching)
-//     search,              // original search term at save time
-//     filters: [ { facet, value } ],
-//     meta,                // optional adapter data for URL rebuild (e.g. category path)
-//     createdAt,           // epoch ms
-//   }
+// FilterKart preset storage — CRUD over chrome.storage.sync. A preset is
+// { id, name, siteId, canonicalCategory, search, filters:[{facet,value}], meta,
+// createdAt, updatedAt }. See docs/PROJECT.md for the schema rationale.
 
 const KEY = "presets";
 

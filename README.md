@@ -18,8 +18,8 @@ when you apply — no fragile DOM clicking.
 - Croma
 
 The architecture is adapter-based, so more sites can be added by dropping a new adapter into
-`src/adapters/` and registering it — see [docs/ONBOARDING.md](docs/ONBOARDING.md) for the step-by-step
-guide and [docs/PROJECT.md](docs/PROJECT.md) for the design.
+`src/adapters/` and registering it — see [docs/PROJECT.md](docs/PROJECT.md) for the design, the
+step-by-step "Adding a New Site" guide, and the manual test checklist.
 
 ## How it works
 
@@ -87,22 +87,22 @@ scripts/                   dev tooling — NOT shipped in the extension
   package.mjs              build the clean Web-Store zip (npm run package)
 
 test/*                     zero-dependency test harness + suites
-docs/*                     design/status/plan notes
+docs/PROJECT.md            design, similarity, per-site findings, add-a-site guide, manual tests
 dist/                      packaged zip output (git-ignored, created by npm run package)
 ```
 
 ## Verification
 
-- `npm run verify` — 40 unit tests covering storage, adapters, registry, matcher, and the
+- `npm run verify` — unit tests covering storage, adapters, registry, matcher, and the
   message router.
-- `node scripts/e2e-check.js` — captures filters from a real result URL on each of the four
-  sites, rebuilds the URL, and confirms the filter set survives the round-trip (mirrors the
+- `node scripts/e2e-check.js` — captures filters from a real result URL on each site,
+  rebuilds the URL, and confirms the filter set survives the round-trip (mirrors the
   save → apply flow).
 
 > Note: automated "load unpacked" testing via Chrome command-line flags is not possible on
 > recent Chrome stable builds (the `--load-extension` switch is disabled). Use the manual
-> **Load unpacked** steps above to try it in a browser. See [docs/TESTING.md](docs/TESTING.md) for a
-> step-by-step manual test checklist.
+> **Load unpacked** steps above to try it in a browser. See the **Manual Test Checklist** in
+> [docs/PROJECT.md](docs/PROJECT.md) for the step-by-step flow.
 
 ## Scope
 

@@ -1,8 +1,5 @@
-// Amazon adapter.
-// All filters live in a single `rh=` param: facets are comma-separated, and
-// multiple values within one facet are pipe-separated.
-//   rh=p_123:308445|391242,p_36:2850000-6100000
-// Search term is the `k=` param.
+// Amazon adapter. All filters live in one `rh=` param (facets comma-separated,
+// values within a facet pipe-separated); search term is the `k=` param.
 import { dedupeFilters, toURL } from "./base.js";
 
 export default {

@@ -1,9 +1,6 @@
-// Nykaa adapter.
-// A search (e.g. ?q=lipstick) redirects to a category page whose path carries the
-// category id: /makeup/lips/c/15. Filters are `<facet>_filter` query params with
-// comma-separated values, e.g. brand_filter=27256,8861&price_range_filter=500-999.
-// The category path can't be derived from the search term, so it is preserved in
-// `meta.path` for faithful reconstruction from the manager / cross-site apply.
+// Nykaa adapter. Filters are `<facet>_filter` params (comma-separated values);
+// the category path (e.g. /makeup/lips/c/15) is preserved in `meta.path` since
+// it can't be derived from the search term.
 import { dedupeFilters, toURL } from "./base.js";
 
 const CATEGORY = /^\/(.+)\/c\/\d+/; // captures the slug before /c/<id>

@@ -1,3 +1,4 @@
+// Round-trip tests for each site adapter (parse/build) on real captured URLs.
 import { setFile, test, assertEqual } from "./harness.js";
 import flipkart from "../src/adapters/flipkart.js";
 import amazon from "../src/adapters/amazon.js";

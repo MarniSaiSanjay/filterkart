@@ -1,10 +1,5 @@
-// Ajio adapter.
-// Filters are encoded inside the `query=` param as colon-separated key:value
-// pairs, prefixed by the sort token (default `relevance`):
-//   query=:relevance:genderfilter:Women:genderfilter:Men
-// The search term is either the `text=` param (classic /search/ URL) or, on the
-// redirected results page, the path slug: /s/rd-<term>-<numericIds> (e.g.
-// /s/rd-running-shoes-5488-78681 -> "running shoes").
+// Ajio adapter. Filters are colon-separated key:value pairs inside `query=`
+// (prefixed by the sort token); search term is `text=` or the /s/rd-<slug> path.
 import { dedupeFilters, toURL } from "./base.js";
 
 // Extract the search term from a /s/rd-<slug>-<ids> results path.

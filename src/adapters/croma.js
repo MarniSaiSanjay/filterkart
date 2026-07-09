@@ -1,11 +1,6 @@
-// Croma adapter.
-// Croma (SAP Hybris) encodes filters in a single colon-delimited `q` param:
-//   q = <term>:<sort>:<facet>:<value>:<facet>:<value>...
-// e.g. mobile:relevance:price_group:National_50,001 - 60,000:...-ProcessorBrand:Google
-// Search results live at /searchB (with a duplicate `text=` term); category and
-// campaign pages live at /<slug>/c/<id> where `q` starts with ":relevance" (empty
-// term). The category path can't be derived from the term, so it is preserved in
-// `meta.path` (as for Nykaa) for faithful reconstruction.
+// Croma adapter. Filters are colon-delimited inside a single `q` param
+// (<term>:<sort>:<facet>:<value>...); results at /searchB, category pages at
+// /<slug>/c/<id> whose path is preserved in `meta.path` (term can't derive it).
 import { dedupeFilters, toURL } from "./base.js";
 
 const CATEGORY = /\/([^/]+)\/c\/\d+/; // last slug before /c/<id>

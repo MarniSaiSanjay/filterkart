@@ -1,10 +1,6 @@
-// FilterKart icon generator.
-// Design: a filter FUNNEL pouring into a shopping CART on a rounded gradient
-// tile (teal -> indigo) with a gold spark accent -> literally "Filter + Cart".
-// Size-aware: the 16px toolbar icon shows only the funnel + spark (the cart is
-// too fine to read at that size); 48/128 show the full funnel + cart.
-// Supersampled anti-aliasing, valid PNGs, no dependencies.
-// Run: node scripts/gen-icons.cjs
+// FilterKart icon generator (dependency-free). Draws a filter funnel + shopping
+// cart on a teal->indigo tile, size-aware (16px drops the cart), and writes
+// icon16/48/128.png. Run: node scripts/gen-icons.cjs
 const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");

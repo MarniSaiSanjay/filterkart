@@ -1,8 +1,6 @@
-// FilterKart content script.
-// Injects a small, style-isolated floating button on supported result pages
-// that gives quick access to Save (current filters) and Apply (matching preset)
-// without opening the toolbar popup. All logic is delegated to the background
-// message router via chrome.runtime.sendMessage, so this stays UI-only.
+// FilterKart content script. Injects a style-isolated (shadow DOM) floating
+// button on supported result pages for quick Save/Apply, delegating all logic
+// to the background message router (stays UI-only).
 
 (function () {
   if (window.__filterKartInjected) return;
@@ -20,11 +18,13 @@
     });
   }
 
-  // Suggest a preset name that doesn't collide with an existing one:
-  // "mobiles" -> "mobiles 2" -> "mobiles 3" ... (case-insensitive).
+  // Suggest a preset name that doesn't collide with an existing one, shown with
+  // a capitalized first letter: "mobiles" -> "Mobiles" -> "Mobiles 2" ...
+  // (case-insensitive; the user can still edit it freely).
   function uniqueName(base, taken) {
     const set = new Set((taken || []).map((n) => String(n).trim().toLowerCase()));
-    const b = String(base || "").trim();
+    const raw = String(base || "").trim();
+    const b = raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : raw;
     if (!b || !set.has(b.toLowerCase())) return b;
     let i = 2;
     while (set.has(`${b} ${i}`.toLowerCase())) i++;
@@ -141,6 +141,7 @@
       row.className = "row";
       const input = document.createElement("input");
       input.placeholder = "Preset name";
+      input.maxLength = 50;
       input.value = uniqueName(context.search || "", existingNames);
       const save = document.createElement("button");
       save.className = "act";

@@ -1,14 +1,7 @@
-// Regenerates src/similarity/vectors.js — the offline word-vector table the
-// matcher uses for semantic token similarity (sofa~couch, tv~television) so
-// synonyms don't need a hand-listed pair table.
-//
-// Run manually only when you want to refresh/retune the vectors:
-//   node scripts/build-vectors.mjs
-//
-// It downloads GloVe 6B 50d (~69 MB, cached in the OS temp dir), keeps the
-// top-TOP_N most-frequent words plus a curated shopping vocabulary, int8-
-// quantizes them, and emits a cross-env ES module (works in both the MV3
-// service worker and Node tests — no fs, no JSON import assertions).
+// Regenerates src/similarity/vectors.js (dev-only; run manually). Downloads
+// GloVe 6B 50d, keeps the top-TOP_N words plus a curated shopping vocabulary,
+// int8-quantizes them, and emits a cross-env ES module for offline semantic
+// token similarity. Run: node scripts/build-vectors.mjs
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

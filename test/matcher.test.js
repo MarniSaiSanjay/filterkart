@@ -1,3 +1,4 @@
+// Tests for the search matcher (src/similarity/matcher.js): normalize + ranking.
 import { setFile, test, assert, assertEqual } from "./harness.js";
 import {
   normalize,

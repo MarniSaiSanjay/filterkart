@@ -1,8 +1,5 @@
-// Flipkart adapter.
-// Filters are repeated `p[]` params, each value shaped `facets.<facet>[]=<value>`.
-// In a live URL the inner `[]` and `=` are percent-encoded, so after
-// URLSearchParams decoding a value looks like: facets.brand%5B%5D=Lenovo
-// Search term is the `q=` param.
+// Flipkart adapter. Filters are repeated `p[]=facets.<facet>[]=<value>` params
+// (inner `[]`/`=` are percent-encoded); search term is the `q=` param.
 import { dedupeFilters, toURL } from "./base.js";
 
 const INNER = /^facets\.(.+?)(?:%5B%5D|\[\])=(.*)$/i;

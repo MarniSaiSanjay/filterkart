@@ -316,11 +316,115 @@ To be verified live.
 
 ---
 
+# Adding a New Site
+
+Onboarding new sites is the **core design goal**. The architecture is pluggable: a site is a
+self-contained **adapter** plus a few registrations — **no core logic changes**. An adapter
+teaches FilterKart how one site encodes its filters in the URL (`src/adapters/base.js`).
+
+## The 5 spots you touch
+
+1. **Create `src/adapters/<site>.js`** — a plain object implementing the contract in `base.js`:
+
+   | Member | Purpose |
+   | --- | --- |
+   | `id` | stable site id, e.g. `"nykaa"` |
+   | `label` | human name, e.g. `"Nykaa"` |
+   | `host(url)` | is this the site's domain? (hostname-only regex) |
+   | `matches(url)` | is this a **search-results** page? usually `this.host(url) && <path check>` |
+   | `parse(url)` | `{ search, filters: [{facet, value}], meta? }` from the URL |
+   | `build(baseUrl, search, filters, meta?)` | reconstruct a results URL from a preset |
+
+   - `filters` is **always** an array of `{ facet, value }`. Use the shared `dedupeFilters()` /
+     `toURL()` helpers from `base.js`.
+   - **`meta` is optional.** Use it only when the results URL carries identity that **cannot be
+     derived** from the search term — e.g. Nykaa's category path `/makeup/lips/c/15` has a numeric
+     id. `parse` stashes it in `meta`, `build` reads it back, and it persists with the preset.
+     Sites whose path *is* the slug (Myntra) don't need `meta`.
+
+2. **Register it — `src/core/registry.js`:** import the adapter and add it to the `ADAPTERS`
+   array. `validateAdapter` runs automatically.
+
+3. **Add `SITE_ROOTS[id]` — `src/core/messaging.js`:** the base results URL for **Apply** (from a
+   non-shopping tab) and the manager's **Open** button. The sidebar logo host is derived from it,
+   so it is **required**.
+
+4. **Add the host to `manifest.json`** in **both** `host_permissions` and
+   `content_scripts[].matches`, e.g. `"*://*.nykaa.com/*"`.
+
+5. **Add a round-trip test — `test/adapters.test.js`:** assert `parse` extracts the expected
+   `search` + `filters` (+ `meta`), and that `build(...)` → `parse(...)` round-trips. Update the
+   `ADAPTERS.length` assertion in `test/registry.test.js` if the count changed.
+
+Everything else (sidebar logo, match-gauge, save/apply/rename/delete, storage) is
+adapter-agnostic and automatic.
+
+## Capturing a site's real URL encoding (do this first)
+
+Don't guess the scheme — web search and raw fetches are unreliable (sites `403` non-browser
+requests; SPAs render filters via JS, not anchor hrefs). Drive real Chrome and watch the address
+bar change as you click filters (see the per-site encodings in **Findings** above):
+
+1. Temporarily install Playwright: `npm install --no-save playwright-core` (reinstall each
+   session; it's removed on cleanup).
+2. Launch real Chrome (`executablePath` to the installed `chrome.exe`), navigate to a search,
+   apply **one** filter, read `page.url()`. Apply a **second** value of the same facet and a value
+   of a **different** facet to reveal param names, multi-value encoding, whether the term lives in
+   a query param or the path, and any search→category redirect (Nykaa/Ajio do).
+3. Write the captured URL into the adapter's test as the ground-truth fixture.
+4. **Verify end-to-end:** navigate Chrome to a URL your `build()` produces and confirm the filters
+   show as active on the live site.
+5. Clean up temp probe scripts and `npm uninstall --no-save playwright-core`.
+
+> PowerShell has no heredoc. Write probes to a temp `*.cjs` file (repo is `"type": "module"`) and
+> run with `node file.cjs`.
+
+## Checklist
+
+- [ ] `src/adapters/<site>.js` created (`id, label, host, matches, parse, build`)
+- [ ] Added to `ADAPTERS` in `src/core/registry.js`
+- [ ] `SITE_ROOTS[id]` added in `src/core/messaging.js`
+- [ ] Host added to `manifest.json` (`host_permissions` **and** `content_scripts.matches`)
+- [ ] Round-trip test in `test/adapters.test.js` against a real captured URL
+- [ ] `ADAPTERS.length` assertion updated in `test/registry.test.js` if needed
+- [ ] `npm run verify` clean; live-verified a `build()` URL applies filters on the real site
+
+---
+
+# Manual Test Checklist
+
+Automated coverage (`npm run verify`, plus `node scripts/e2e-check.js` for parse→build→parse
+round-trips) can't reach the live extension UI or authenticated, JS-rendered pages — Chrome
+blocks command-line loading of unpacked extensions and live sites bot-block server requests. So
+exercise the UI in a real signed-in browser:
+
+**Load:** `chrome://extensions` → enable **Developer mode** → **Load unpacked** → select the repo
+root. Confirm the funnel icon appears with no errors on the card.
+
+**Per-site flow (repeat per site, sign in first):**
+
+1. Run a search (e.g. *laptop* / *running shoes*) and apply a few filters via the site UI.
+2. Open the toolbar popup — check the site badge, search term, and filter count are correct.
+3. Name the preset and **Save** — it appears under "Matching presets".
+4. Clear filters or open a *similar* search (e.g. *gaming laptop*), then **Apply** the preset —
+   the page navigates and filters re-apply to the current search term.
+5. Repeat Save/Apply from the in-page **FilterKart** button (bottom-right).
+6. Try **rename** and **delete** from the popup — both update the list.
+
+**Site-specific watch-points:** Flipkart brands with spaces/`&` (e.g. "H&M") restore correctly;
+Amazon numeric brand IDs + price range in `rh=`; Myntra applying to a *different* category path
+still restores brand/price; Ajio `query=:relevance:...` sort isn't duplicated.
+
+If something breaks, compare the live URL after filtering to what `adapter.parse` / `adapter.build`
+produce and adjust `src/adapters/<site>.js`. Re-run `npm run verify` before committing.
+
+---
+
 # Notes / Tooling
 
-- Live inspection done by driving a real Chrome via CDP (remote debugging port `9222`) with
-  Playwright (`playwright-core`), using a dedicated profile so login state can persist.
-- Inspection scripts live in `scripts/` (`inspect.js`, `dom.js`, `click.js`, `verify.js`).
+- Inspection was done by driving a real Chrome via Playwright (`playwright-core`) with a
+  dedicated profile so login state persists. Probe scripts are temporary and removed after use
+  (see "Capturing a site's real URL encoding" above).
 
 # Future UI — scaling the supported-site list
 

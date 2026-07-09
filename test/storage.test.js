@@ -1,3 +1,4 @@
+// Tests for preset storage CRUD (src/core/storage.js) against a mock store.
 import { setFile, test, assert, assertEqual } from "./harness.js";
 import { mockStore } from "./mock-store.js";
 import {

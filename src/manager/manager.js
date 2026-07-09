@@ -295,7 +295,7 @@ function presetCard(preset) {
     renameBtn.appendChild(icon(name));
   }
   function enterEdit() {
-    input = el("input", { type: "text", class: "name-edit", value: preset.name });
+    input = el("input", { type: "text", class: "name-edit", value: preset.name, maxlength: 50 });
     topline.replaceChild(input, nameEl);
     setRenameIcon("check");
     renameBtn.title = "Save name";

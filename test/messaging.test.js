@@ -1,3 +1,4 @@
+// Tests for the message router (src/core/messaging.js) with mocked deps.
 import { setFile, test, assert, assertEqual } from "./harness.js";
 import { mockStore } from "./mock-store.js";
 import { createRouter } from "../src/core/messaging.js";
@@ -68,6 +69,15 @@ test("save stores a preset parsed from the active tab", async () => {
   assertEqual(preset.name, "My Laptops");
   assertEqual(preset.filters.length, 2);
   assertEqual(preset.canonicalCategory, "laptop");
+});
+
+test("save caps the preset name at 50 characters", async () => {
+  const { route } = makeRouter({ url: AMAZON_URL });
+  const longName = "L".repeat(80);
+  const { preset } = await route({ type: "save", name: longName });
+  assertEqual(preset.name.length, 50);
+  const { preset: renamed } = await route({ type: "rename", id: preset.id, name: "R".repeat(80) });
+  assertEqual(renamed.name.length, 50);
 });
 
 test("save fails when no filters are applied", async () => {

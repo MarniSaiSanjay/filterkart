@@ -177,7 +177,7 @@ function presetCard(preset, score) {
     renameBtn.appendChild(icon(name));
   }
   function enterEdit() {
-    input = el("input", { type: "text", class: "name-edit", value: preset.name });
+    input = el("input", { type: "text", class: "name-edit", value: preset.name, maxlength: 50 });
     nameRow.replaceChild(input, nameEl);
     setRenameIcon("check");
     renameBtn.title = "Save name";
@@ -251,6 +251,7 @@ function saveBar(context, existingNames) {
       type: "text",
       class: "name-input",
       placeholder: "Preset name",
+      maxlength: 50,
       value: uniqueName(context.search || "", existingNames),
     });
     const confirm = el("button", { class: "save-btn", text: "Save" });

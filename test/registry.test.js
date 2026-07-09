@@ -1,3 +1,4 @@
+// Tests for the adapter registry (src/core/registry.js): resolve + lookup.
 import { setFile, test, assert, assertEqual } from "./harness.js";
 import { validateAdapter, toURL, dedupeFilters } from "../src/adapters/base.js";
 import { resolveAdapter, getAdapterById, ADAPTERS } from "../src/core/registry.js";

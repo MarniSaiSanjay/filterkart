@@ -1,13 +1,8 @@
 // FilterKart message router (dependency-injected so it is unit-testable).
-// background.js supplies real chrome-backed deps; tests supply mocks.
-//
-// deps = {
-//   listPresets, createPreset, deletePreset, updatePreset, getPreset,  // storage
-//   resolveAdapter, getAdapterById,                                    // registry
-//   normalize, rankPresets,                                            // matcher
-//   getActiveTab: () => Promise<tab>,                                  // chrome.tabs
-//   navigateTab: (tabId, url) => Promise<void>,
-// }
+// background.js supplies real chrome-backed deps (storage, registry, matcher,
+// tabs); tests supply mocks. See the deps object in background.js.
+
+const NAME_MAX = 50; // preset name cap, mirrored by the UI inputs' maxlength
 
 export const SITE_ROOTS = {
   flipkart: "https://www.flipkart.com/search",
@@ -60,7 +55,7 @@ async function save(deps, msg) {
   const { search, filters, meta } = adapter.parse(new URL(tab.url));
   if (!filters.length) throw new Error("no filters selected on this page");
   const preset = await deps.createPreset({
-    name: msg.name || search || adapter.label,
+    name: (msg.name || search || adapter.label).slice(0, NAME_MAX),
     siteId: adapter.id,
     canonicalCategory: deps.normalize(search),
     search,
@@ -134,7 +129,7 @@ export function createRouter(deps) {
       case "delete":
         return { ok: await deps.deletePreset(msg.id) };
       case "rename":
-        return { preset: await deps.updatePreset(msg.id, { name: msg.name }) };
+        return { preset: await deps.updatePreset(msg.id, { name: (msg.name || "").slice(0, NAME_MAX) }) };
       default:
         throw new Error("unknown message type: " + (msg && msg.type));
     }

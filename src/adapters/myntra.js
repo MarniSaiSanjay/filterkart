@@ -1,9 +1,5 @@
-// Myntra adapter.
-// Category/search lives in the URL path (e.g. /sports-shoes).
-// Filters live in `f=` and range filters (Price) in `rf=`.
-//   f=Brand:Nike,Puma::Gender:men women,women
-//   rf=Price:0.0_600.0_0.0 TO 600.0
-// Facets are joined by "::" and values within a facet by ",".
+// Myntra adapter. Category/search is the URL path (e.g. /sports-shoes); filters
+// are in `f=` and price ranges in `rf=` (facets joined by "::", values by ",").
 import { dedupeFilters, toURL } from "./base.js";
 
 // Facets that Myntra encodes in `rf=` rather than `f=`.
