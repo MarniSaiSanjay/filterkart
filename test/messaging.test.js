@@ -91,6 +91,21 @@ test("save fails when no filters are applied", async () => {
   assert(threw, "should refuse to save with no filters");
 });
 
+test("save blocks an identical duplicate (same site, search and filters)", async () => {
+  const { route } = makeRouter({ url: AMAZON_URL });
+  await route({ type: "save", name: "First" });
+  let msg = "";
+  try {
+    await route({ type: "save", name: "Second" });
+  } catch (e) {
+    msg = e.message;
+  }
+  assert(msg.includes("already saved"), "should block the duplicate save");
+  assert(msg.includes("First"), "should name the existing preset");
+  const all = await route({ type: "all" });
+  assertEqual(all.presets.length, 1);
+});
+
 test("list returns matched presets for the current search", async () => {
   const { route } = makeRouter({ url: AMAZON_URL });
   await route({ type: "save", name: "Laptops preset" });

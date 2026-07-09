@@ -245,6 +245,20 @@ function saveBar(context, existingNames) {
     return btn;
   };
 
+  function showNotice(message) {
+    bar.textContent = "";
+    const note = el("p", { class: "save-note show", text: message });
+    const okay = el("button", { class: "save-btn", text: "Okay" });
+    okay.addEventListener("click", () => {
+      bar.textContent = "";
+      bar.appendChild(mainBtn());
+    });
+    bar.appendChild(
+      el("div", { class: "save-form" }, [note, el("div", { class: "save-form-row" }, [okay])])
+    );
+    okay.focus();
+  }
+
   function showForm() {
     bar.textContent = "";
     const input = el("input", {
@@ -264,8 +278,7 @@ function saveBar(context, existingNames) {
         await send({ type: "save", name });
         load();
       } catch (e) {
-        showError(e.message);
-        confirm.disabled = false;
+        showNotice(e.message);
       }
     });
     cancel.addEventListener("click", () => {

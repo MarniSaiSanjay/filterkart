@@ -4,6 +4,14 @@
 
 const NAME_MAX = 50; // preset name cap, mirrored by the UI inputs' maxlength
 
+// Order-independent signature of a filter set, for duplicate detection.
+function filterSig(filters) {
+  return (filters || [])
+    .map((f) => `${f.facet}\u0000${f.value}`)
+    .sort()
+    .join("\u0001");
+}
+
 export const SITE_ROOTS = {
   flipkart: "https://www.flipkart.com/search",
   amazon: "https://www.amazon.in/s",
@@ -54,6 +62,15 @@ async function save(deps, msg) {
   if (!adapter) throw new Error("this site is not supported");
   const { search, filters, meta } = adapter.parse(new URL(tab.url));
   if (!filters.length) throw new Error("no filters selected on this page");
+  const all = await deps.listPresets();
+  const sig = filterSig(filters);
+  const dup = all.find(
+    (p) =>
+      p.siteId === adapter.id &&
+      (p.search || "") === (search || "") &&
+      filterSig(p.filters) === sig
+  );
+  if (dup) throw new Error(`You've already saved these filters as \u201C${dup.name}\u201D.`);
   const preset = await deps.createPreset({
     name: (msg.name || search || adapter.label).slice(0, NAME_MAX),
     siteId: adapter.id,

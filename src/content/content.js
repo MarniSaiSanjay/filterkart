@@ -91,6 +91,10 @@
     li:hover { background: rgba(120,120,128,0.06); }
     li button.act { flex-shrink: 0; }
     .pname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; font-size: 13px; }
+    .note {
+      font-size: 12px; font-weight: 600; line-height: 1.45; margin: 0; padding: 9px 14px;
+      color: #c02626; background: rgba(229,72,77,0.08); border-bottom: 1px solid rgba(229,72,77,0.2);
+    }
   `;
   root.appendChild(style);
 
@@ -155,8 +159,25 @@
           await send({ type: "save", name });
           refresh();
         } catch (e) {
-          save.textContent = "Error";
-          save.disabled = false;
+          panel.textContent = "";
+          const heading = document.createElement("p");
+          heading.className = "title";
+          heading.textContent = "FilterKart";
+          panel.appendChild(heading);
+          const note = document.createElement("p");
+          note.className = "note";
+          note.textContent = e.message;
+          panel.appendChild(note);
+          const okRow = document.createElement("div");
+          okRow.className = "row";
+          okRow.style.borderBottom = "none";
+          okRow.style.justifyContent = "flex-end";
+          const okay = document.createElement("button");
+          okay.className = "act";
+          okay.textContent = "Okay";
+          okay.addEventListener("click", refresh);
+          okRow.appendChild(okay);
+          panel.appendChild(okRow);
         }
       });
       row.appendChild(input);

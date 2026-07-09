@@ -50,7 +50,7 @@ h1 { font-family: var(--display); font-size: 19px; font-weight: 800; margin: 0; 
 .settings-btn svg { width: 19px; height: 19px; }
 .settings-btn:hover { background: var(--soft); color: var(--ink); }
 
-main { padding: 0 var(--gutter); flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+main { padding: 0 var(--gutter); flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
 .muted { color: var(--muted); font-size: 13px; padding: 12px 0; margin: 0; font-weight: 500; }
 .error { color: var(--danger); font-size: 13px; margin: 12px 0 6px; font-weight: 600; }
 .empty-line { color: var(--muted); font-size: 13px; text-align: center; padding: 22px 4px; margin: 0; font-weight: 500; line-height: 1.5; }
@@ -224,6 +224,11 @@ main { padding: 0 var(--gutter); flex: 1 1 auto; min-height: 0; overflow-y: auto
 .name-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .save-form-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; }
 .save-form-row .save-btn { padding: 10px 22px; font-size: 14px; border-radius: 10px; }
+.save-note {
+  display: none; margin: 0; padding: 9px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 600;
+  color: var(--danger); background: rgba(229, 72, 77, 0.09); border: 1px solid rgba(229, 72, 77, 0.22);
+}
+.save-note.show { display: block; }
 
 .text-btn {
   border: none; background: transparent; color: var(--muted);
