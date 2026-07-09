@@ -200,3 +200,61 @@ test("buildUrl produces a re-parseable site URL without navigating", async () =>
   assertEqual(back.filters.length, 2);
   assertEqual(r.navigations.length, 0); // must NOT navigate any tab
 });
+
+const AMAZON_BARE = "https://www.amazon.in/s?k=laptop";
+const AMAZON_URL2 =
+  "https://www.amazon.in/s?k=laptop&rh=" + encodeURIComponent("p_89:Dell");
+
+test("setAutoApply flips the flag and persists", async () => {
+  const { route } = makeRouter({ url: AMAZON_URL });
+  const { preset } = await route({ type: "save", name: "p" });
+  assertEqual(preset.autoApply, false);
+  const res = await route({ type: "setAutoApply", id: preset.id, value: true });
+  assertEqual(res.preset.autoApply, true);
+  const all = await route({ type: "all" });
+  assertEqual(all.presets[0].autoApply, true);
+});
+
+test("autoApplyTarget redirects a bare search to a matching auto-apply preset", async () => {
+  const r = makeRouter({ url: AMAZON_URL });
+  const { preset } = await r.route({ type: "save", name: "p" });
+  await r.route({ type: "setAutoApply", id: preset.id, value: true });
+
+  const res = await r.route({ type: "autoApplyTarget", url: AMAZON_BARE });
+  assert(res.url, "should return a redirect URL");
+  assert(res.url.includes("p_123"), "applies the saved filters");
+  assertEqual(res.key, "amazon|laptop");
+});
+
+test("autoApplyTarget skips a page that already has filters (loop guard)", async () => {
+  const r = makeRouter({ url: AMAZON_URL });
+  const { preset } = await r.route({ type: "save", name: "p" });
+  await r.route({ type: "setAutoApply", id: preset.id, value: true });
+
+  const res = await r.route({ type: "autoApplyTarget", url: AMAZON_URL });
+  assertEqual(res.url, null);
+});
+
+test("autoApplyTarget returns null when no preset has auto-apply on", async () => {
+  const r = makeRouter({ url: AMAZON_URL });
+  await r.route({ type: "save", name: "p" }); // left off
+  const res = await r.route({ type: "autoApplyTarget", url: AMAZON_BARE });
+  assertEqual(res.url, null);
+});
+
+test("autoApplyTarget breaks a tie by most recently updated preset", async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const r = makeRouter({ url: AMAZON_URL });
+  const first = await r.route({ type: "save", name: "first" });
+  await r.route({ type: "setAutoApply", id: first.preset.id, value: true });
+
+  await sleep(5); // ensure a later updatedAt on the second preset
+  // A second auto-apply preset for the same search but different filters.
+  r.tab.url = AMAZON_URL2;
+  const second = await r.route({ type: "save", name: "second" });
+  await r.route({ type: "setAutoApply", id: second.preset.id, value: true });
+
+  const res = await r.route({ type: "autoApplyTarget", url: AMAZON_BARE });
+  assert(res.url.includes("Dell"), "most recent preset's filters win the tie");
+  assert(!res.url.includes("p_123"), "not the older preset's filters");
+});

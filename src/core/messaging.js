@@ -4,6 +4,10 @@
 
 const NAME_MAX = 50; // preset name cap, mirrored by the UI inputs' maxlength
 
+// Auto-apply only fires on a confident (essentially exact) search match, so an
+// automatic page redirect never surprises the user on a loosely-related search.
+const AUTO_APPLY_THRESHOLD = 0.999;
+
 // Cap a name to NAME_MAX by code points, not UTF-16 units, so we never slice a
 // surrogate pair (emoji) in half and store a broken "\uFFFD" character.
 function capName(name) {
@@ -126,6 +130,51 @@ async function buildUrl(deps, msg) {
   return { url };
 }
 
+// Flip a preset's auto-apply flag. updatePreset bumps updatedAt, so the most
+// recently toggled preset also wins the "most recent" tie-break below.
+async function setAutoApply(deps, msg) {
+  const preset = await deps.updatePreset(msg.id, { autoApply: !!msg.value });
+  if (!preset) throw new Error("preset not found");
+  return { preset };
+}
+
+// Given a page URL, return the filtered URL to auto-redirect to (or {url:null}).
+// Fires only on a *bare* search (a search with no filters yet) that matches an
+// auto-apply preset; the empty-filters check also serves as the loop guard,
+// since the redirected page then has filters and no longer qualifies.
+async function autoApplyTarget(deps, msg) {
+  if (!msg || !msg.url) return { url: null };
+  let pageUrl;
+  try {
+    pageUrl = new URL(msg.url);
+  } catch {
+    return { url: null };
+  }
+  const adapter = deps.resolveAdapter(msg.url);
+  if (!adapter) return { url: null };
+  const { search, filters } = adapter.parse(pageUrl);
+  if (!search) return { url: null };
+  if (filters && filters.length) return { url: null };
+
+  const all = await deps.listPresets();
+  const candidates = all.filter(
+    (p) => p.autoApply && p.siteId === adapter.id && p.filters && p.filters.length
+  );
+  if (!candidates.length) return { url: null };
+
+  const ranked = deps.rankPresets(candidates, search, { threshold: AUTO_APPLY_THRESHOLD });
+  if (!ranked.length) return { url: null };
+  const topScore = ranked[0].score;
+  // Among presets tied at the top score, apply the most recently updated one.
+  const top = ranked
+    .filter((r) => r.score >= topScore - 1e-9)
+    .map((r) => r.preset)
+    .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))[0];
+
+  const url = adapter.build(pageUrl, search, top.filters, top.meta);
+  return { url, key: adapter.id + "|" + String(search).trim().toLowerCase() };
+}
+
 // Everything the manager page needs to render: the full preset library plus
 // the list of supported sites (id + label) for the sidebar.
 async function all(deps) {
@@ -147,6 +196,10 @@ export function createRouter(deps) {
         return apply(deps, msg);
       case "buildUrl":
         return buildUrl(deps, msg);
+      case "setAutoApply":
+        return setAutoApply(deps, msg);
+      case "autoApplyTarget":
+        return autoApplyTarget(deps, msg);
       case "all":
         return all(deps);
       case "delete":

@@ -92,6 +92,7 @@ function sanitizePreset(p) {
     search: str(p.search),
     filters,
     meta: p.meta && typeof p.meta === "object" ? p.meta : null,
+    autoApply: p.autoApply === true,
     createdAt: typeof p.createdAt === "number" ? p.createdAt : Date.now(),
     updatedAt: typeof p.updatedAt === "number" ? p.updatedAt : Date.now(),
   };
@@ -135,6 +136,7 @@ export async function createPreset(preset, store) {
     search: preset.search || "",
     filters: Array.isArray(preset.filters) ? preset.filters : [],
     meta: preset.meta || null,
+    autoApply: preset.autoApply === true,
     createdAt: preset.createdAt || Date.now(),
     updatedAt: preset.updatedAt || preset.createdAt || Date.now(),
   };

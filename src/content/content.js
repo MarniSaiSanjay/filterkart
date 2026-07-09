@@ -237,5 +237,27 @@
     });
   }
 
+  // Auto-apply: on a bare supported search, redirect once per tab-session to a
+  // matching auto-apply preset's filtered URL. sessionStorage keys the guard to
+  // this tab + search, so clearing filters mid-session isn't fought. We read
+  // storage locally first and only wake the service worker when at least one
+  // auto-apply preset exists (the default is off, so usually we skip entirely).
+  (async function autoApply() {
+    try {
+      if (!(chrome && chrome.storage && chrome.storage.sync)) return;
+      const all = await new Promise((res) => chrome.storage.sync.get(null, res));
+      const hasAuto = Object.keys(all).some(
+        (k) => k.startsWith("preset:") && all[k] && all[k].autoApply === true
+      );
+      if (!hasAuto) return;
+      const res = await send({ type: "autoApplyTarget", url: location.href });
+      if (!res || !res.url || !res.key || res.url === location.href) return;
+      const guard = "fk_autoapply:" + res.key;
+      if (sessionStorage.getItem(guard)) return;
+      sessionStorage.setItem(guard, "1");
+      location.replace(res.url);
+    } catch {}
+  })();
+
   document.documentElement.appendChild(host);
 })();

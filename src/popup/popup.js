@@ -114,6 +114,40 @@ function presetCard(preset, score) {
     },
   });
 
+  // When auto-apply is on, the preset applies itself on its search, so the
+  // manual Apply button is replaced by a static "Auto-applied" badge.
+  const appliedBadge = el("span", { class: "applied-badge", title: "Auto-applies on this search" }, [
+    icon("check"),
+    el("span", { text: "Auto-applied" }),
+  ]);
+  const applySlot = el("span", { class: "apply-slot" });
+  function paintApply() {
+    applySlot.textContent = "";
+    applySlot.appendChild(preset.autoApply ? appliedBadge : apply);
+  }
+  paintApply();
+
+  const autoToggle = el("input", { type: "checkbox", class: "auto-toggle" });
+  autoToggle.checked = !!preset.autoApply;
+  autoToggle.addEventListener("change", async () => {
+    const val = autoToggle.checked;
+    try {
+      await send({ type: "setAutoApply", id: preset.id, value: val });
+      preset.autoApply = val;
+      preset.updatedAt = Date.now();
+      paintApply();
+    } catch (e) {
+      autoToggle.checked = !val;
+      showError(e.message);
+    }
+  });
+  const autoRow = el("label", { class: "auto-row", title: "Redirect to these filters when you search this on the site" }, [
+    autoToggle,
+    el("span", { class: "auto-switch" }),
+    el("span", { class: "auto-label", text: "Auto-apply on this search" }),
+  ]);
+  bodyChildren.push(autoRow);
+
   const del = el(
     "button",
     {
@@ -158,16 +192,16 @@ function presetCard(preset, score) {
     }
   });
 
-  const actions = el("div", { class: "preset-actions" }, [apply, del]);
+  const actions = el("div", { class: "preset-actions" }, [applySlot, del]);
   function enterConfirm() {
-    apply.style.display = "none";
+    applySlot.style.display = "none";
     del.style.display = "none";
     actions.appendChild(confirmGroup);
     confirmDel.focus();
   }
   function exitConfirm() {
     if (confirmGroup.parentNode) actions.removeChild(confirmGroup);
-    apply.style.display = "";
+    applySlot.style.display = "";
     del.style.display = "";
   }
 
@@ -182,7 +216,7 @@ function presetCard(preset, score) {
     setRenameIcon("check");
     renameBtn.title = "Save name";
     renameBtn.classList.add("editing");
-    apply.style.display = "none";
+    applySlot.style.display = "none";
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -201,7 +235,7 @@ function presetCard(preset, score) {
     setRenameIcon("pencil");
     renameBtn.title = "Rename";
     renameBtn.classList.remove("editing");
-    apply.style.display = "";
+    applySlot.style.display = "";
   }
   async function commitEdit() {
     const name = input.value.trim();
